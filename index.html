@@ -6,6 +6,9 @@
   <title>PaperJammed.net - Sarcastic Printer Diagnostic Tool</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Cinzel:wght@700&display=swap" rel="stylesheet">
   <style>
     /* Custom Styles for Print Formatting */
     @media print {
@@ -27,14 +30,21 @@
         margin: 0 !important;
         padding: 0 !important;
       }
-      /* Ensure precise print colors if requested */
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
 
+    .font-dotmatrix {
+      font-family: 'VT323', 'Courier New', monospace;
+    }
+
+    .font-serif-header {
+      font-family: 'Cinzel', 'Georgia', serif;
+    }
+
     @page {
       size: auto;
-      margin: 15mm;
+      margin: 12mm;
     }
   </style>
 </head>
@@ -44,11 +54,14 @@
   <header class="no-print bg-slate-800 border-b border-slate-700 p-4 sticky top-0 z-50 shadow-md">
     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
       <div class="flex items-center gap-3">
-        <div class="p-2.5 bg-indigo-600 rounded-lg text-white font-bold text-xl">
+        <div class="p-2.5 bg-rose-600 rounded-lg text-white font-bold text-xl shadow-lg shadow-rose-900/40">
           <i class="fa-solid fa-print"></i>
         </div>
         <div>
-          <h1 class="text-xl font-bold tracking-tight text-white">PaperJammed<span class="text-indigo-400">.net</span></h1>
+          <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+            PaperJammed<span class="text-rose-400">.net</span>
+            <span class="text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full font-mono uppercase">v1.6</span>
+          </h1>
           <p class="text-xs text-slate-400">The IT-approved printer setup tool that leaves a smile.</p>
         </div>
       </div>
@@ -70,47 +83,128 @@
       
       <!-- Template Selector -->
       <div class="bg-slate-800 rounded-xl p-5 border border-slate-700 shadow-sm">
-        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">1. Select Prank Template</h2>
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-list-check text-rose-400"></i>
+          <span>1. Select Prank Template</span>
+        </h2>
         
-        <div class="space-y-2">
-          <!-- Option 1: Recipe (B/W - Top) -->
-          <label onclick="setTemplate('recipe')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-slate-700 hover:border-indigo-500 bg-slate-800/50 hover:bg-slate-700/50 cursor-pointer transition">
-            <input type="radio" name="template" value="recipe" checked class="mt-1 accent-indigo-500">
+        <div class="space-y-3">
+
+          <!-- Option 1: Jam Remover Button -->
+          <div>
+            <label onclick="setTemplate('jamRemover')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-rose-500/50 hover:border-rose-400 bg-rose-950/20 hover:bg-rose-900/30 cursor-pointer transition">
+              <input type="radio" name="template" value="jamRemover" checked class="mt-1 accent-rose-500">
+              <div class="w-full">
+                <div class="font-medium text-white flex items-center justify-between gap-2">
+                  <span class="flex items-center gap-1.5 text-rose-300 font-bold">
+                    <i class="fa-solid fa-bread-slice text-xs"></i> Printer Jam Remover
+                  </span>
+                  <span class="text-[10px] bg-rose-500 text-white font-bold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0 uppercase tracking-wider">POPULAR</span>
+                </div>
+                <p class="text-xs text-slate-300 mt-0.5">Extract printer "jam" onto a line-art slice of bread with a customizable slider blotch!</p>
+              </div>
+            </label>
+
+            <!-- Jam Remover Slider Controls -->
+            <div id="jamControlsBox" class="mt-2 bg-rose-950/40 border border-rose-500/30 rounded-lg p-3.5 space-y-2.5 shadow-inner">
+              <div class="flex justify-between items-center">
+                <label for="jamSliderInput" class="text-[11px] font-bold text-rose-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <i class="fa-solid fa-sliders text-rose-400"></i>
+                  <span>Extracted Jam Coverage:</span>
+                </label>
+                <span class="text-xs font-mono font-bold text-white bg-rose-900/80 border border-rose-500/40 px-2 py-0.5 rounded">
+                  <span id="sliderValDisplay">30</span>%
+                </span>
+              </div>
+
+              <input type="range" id="jamSliderInput" min="0" max="100" value="30" oninput="handleJamSliderChange(this.value)"
+                class="w-full accent-rose-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+
+              <p class="text-[10px] text-slate-300 italic">
+                Slide to adjust the amount of fruit jam printed on the bread!
+              </p>
+            </div>
+          </div>
+
+          <!-- Option 2: Ghost Exorcism (NEW!) -->
+          <label onclick="setTemplate('ghost')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-purple-500/50 hover:border-purple-400 bg-purple-950/20 hover:bg-purple-900/30 cursor-pointer transition">
+            <input type="radio" name="template" value="ghost" class="mt-1 accent-purple-500">
             <div class="w-full">
               <div class="font-medium text-white flex items-center justify-between gap-2">
-                <span>Toner Soup Recipe</span>
-                <span class="text-[10px] bg-slate-700 text-slate-400 font-bold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0">B/W</span>
+                <span class="flex items-center gap-1.5 text-purple-300 font-bold">
+                  <i class="fa-solid fa-ghost text-xs"></i> Ghost-Buffer Exorcism
+                </span>
+                <span class="text-[10px] bg-purple-500 text-white font-extrabold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0 uppercase tracking-wider">NEW!</span>
               </div>
-              <p class="text-xs text-slate-400 mt-0.5">An official-looking recipe card with completely chaotic ingredients.</p>
+              <p class="text-xs text-slate-300 mt-0.5">Purge demonic printer ghosts with pseudo-Latin technobabble chants and warding sigils.</p>
             </div>
           </label>
 
-          <!-- Option 2: Technobabble -->
-          <label onclick="setTemplate('technobabble')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-slate-700 hover:border-indigo-500 bg-slate-800/50 hover:bg-slate-700/50 cursor-pointer transition">
+          <!-- Option 3: Printer Installation Certificate -->
+          <label onclick="setTemplate('certificate')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-slate-600 hover:border-slate-400 bg-slate-800/80 hover:bg-slate-700/80 cursor-pointer transition">
+            <input type="radio" name="template" value="certificate" class="mt-1 accent-indigo-500">
+            <div class="w-full">
+              <div class="font-medium text-white flex items-center justify-between gap-2">
+                <span class="flex items-center gap-1.5 text-slate-200 font-bold">
+                  <i class="fa-solid fa-award text-xs text-amber-400"></i> Installation Certificate
+                </span>
+                <span class="text-[10px] bg-slate-700 text-slate-300 font-bold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0">B/W</span>
+              </div>
+              <p class="text-xs text-slate-300 mt-0.5">Grayscale certificate certifying hardware quirks & capabilities with technician signature.</p>
+            </div>
+          </label>
+
+          <!-- Option 4: PC LOAD LETTER -->
+          <label onclick="setTemplate('pcloadletter')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 hover:bg-slate-700/50 cursor-pointer transition">
+            <input type="radio" name="template" value="pcloadletter" class="mt-1 accent-amber-500">
+            <div class="w-full">
+              <div class="font-medium text-white flex items-center justify-between gap-2">
+                <span class="flex items-center gap-1.5 text-amber-300 font-bold">
+                  <i class="fa-solid fa-terminal text-xs"></i> PC LOAD LETTER
+                </span>
+              </div>
+              <p class="text-xs text-slate-300 mt-0.5">Large dot-matrix error screen throwback inspired by Office Space (1999).</p>
+            </div>
+          </label>
+
+          <!-- Option 5: Recipe -->
+          <label onclick="setTemplate('recipe')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 hover:bg-slate-700/50 cursor-pointer transition">
+            <input type="radio" name="template" value="recipe" class="mt-1 accent-indigo-500">
+            <div class="w-full">
+              <div class="font-medium text-white flex items-center justify-between gap-2">
+                <span>Toner Soup Recipe</span>
+                <span class="text-[10px] bg-slate-700 text-slate-300 font-bold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0">B/W</span>
+              </div>
+              <p class="text-xs text-slate-400 mt-0.5">An official-looking recipe card with chaotic ingredients.</p>
+            </div>
+          </label>
+
+          <!-- Option 6: Technobabble -->
+          <label onclick="setTemplate('technobabble')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 hover:bg-slate-700/50 cursor-pointer transition">
             <input type="radio" name="template" value="technobabble" class="mt-1 accent-indigo-500">
             <div class="w-full">
               <div class="font-medium text-white flex items-center justify-between gap-2">
                 <span>Technobabble Report</span>
                 <span class="text-[10px] bg-slate-700 text-emerald-300 px-1.5 py-0.5 rounded whitespace-nowrap shrink-0">B/W + Color</span>
               </div>
-              <p class="text-xs text-slate-400 mt-0.5">Looks official, but filled with absurd futuristic IT nonsensical jargon.</p>
+              <p class="text-xs text-slate-400 mt-0.5">Looks official, filled with absurd futuristic IT jargon.</p>
             </div>
           </label>
 
-          <!-- Option 3: Alignment -->
-          <label onclick="setTemplate('alignment')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-slate-700 hover:border-indigo-500 bg-slate-800/50 hover:bg-slate-700/50 cursor-pointer transition">
+          <!-- Option 7: Alignment -->
+          <label onclick="setTemplate('alignment')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 hover:bg-slate-700/50 cursor-pointer transition">
             <input type="radio" name="template" value="alignment" class="mt-1 accent-indigo-500">
             <div class="w-full">
               <div class="font-medium text-white flex items-center justify-between gap-2">
                 <span>"Parallel" Alignment Test</span>
                 <span class="text-[10px] bg-slate-700 text-emerald-300 px-1.5 py-0.5 rounded whitespace-nowrap shrink-0">B/W + Color</span>
               </div>
-              <p class="text-xs text-slate-400 mt-0.5">Claim to test straight lines, but lines clearly cross or veer off.</p>
+              <p class="text-xs text-slate-400 mt-0.5">Claim to test straight lines, but lines clearly cross or curve.</p>
             </div>
           </label>
 
-          <!-- Option 4: Invoice -->
-          <label onclick="setTemplate('invoice')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-slate-700 hover:border-indigo-500 bg-slate-800/50 hover:bg-slate-700/50 cursor-pointer transition">
+          <!-- Option 8: Invoice -->
+          <label onclick="setTemplate('invoice')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 hover:bg-slate-700/50 cursor-pointer transition">
             <input type="radio" name="template" value="invoice" class="mt-1 accent-indigo-500">
             <div class="w-full">
               <div class="font-medium text-white flex items-center justify-between gap-2">
@@ -125,25 +219,28 @@
 
       <!-- Customization Box -->
       <div class="bg-slate-800 rounded-xl p-5 border border-slate-700 shadow-sm">
-        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">2. Optional Customization</h2>
-        <label for="customNote" class="block text-xs text-slate-300 mb-1">Add Footnote / Tech Note (e.g., "Tested by Dave @ 2:30 PM"):</label>
-        <input type="text" id="customNote" oninput="updateCustomNote()" placeholder="e.g. IT Department Approved #402" 
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-pen-to-square text-indigo-400"></i>
+          <span>2. Optional Customization</span>
+        </h2>
+        <label for="customNote" class="block text-xs text-slate-300 mb-1">Technician / Exorcist Name / Footnote:</label>
+        <input type="text" id="customNote" oninput="updateCustomNote()" placeholder="e.g., Tech Dave (Certified Ghost Buster)" 
           class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
       </div>
 
       <!-- Instructions & Context -->
       <div class="bg-slate-800/60 rounded-xl p-5 border border-slate-700/60 text-xs text-slate-400 space-y-2">
-        <div class="flex items-center gap-2 text-indigo-400 font-semibold text-sm">
+        <div class="flex items-center gap-2 text-rose-400 font-semibold text-sm">
           <i class="fa-solid fa-circle-info"></i>
-          <span>Why use this?</span>
+          <span>Why use PaperJammed.net?</span>
         </div>
-        <p>Adding a printer to Chrome/Windows often requires sending an initial print job to ensure full system registration. Use this page to verify paper feed, alignment, and color levels—while giving the next person at the tray a good laugh!</p>
+        <p>Adding a new printer doesn't automatically list it in Chrome's primary destination dropdown without clicking "See more..." to select it from available system printers. Running a quick test print right after setup eliminates a return trip to the user 30 minutes later—now with more laughs!</p>
       </div>
 
       <!-- Monetization Slot Placeholder (Ad Banner) -->
       <div class="bg-slate-800/40 border border-dashed border-slate-700 rounded-xl p-4 text-center">
         <span class="text-[10px] uppercase font-mono text-slate-500 block mb-1">Advertisement Placeholder</span>
-        <div class="bg-slate-900/60 h-32 rounded flex items-center justify-center text-slate-600 text-xs font-mono">
+        <div class="bg-slate-900/60 h-28 rounded flex items-center justify-center text-slate-600 text-xs font-mono">
           [ 300 x 250 Responsive Ad Unit ]
         </div>
       </div>
@@ -154,15 +251,17 @@
     <main class="lg:col-span-8 flex flex-col items-center">
       
       <div class="no-print w-full flex justify-between items-center mb-3">
-        <span class="text-sm text-slate-400 font-medium">Page Preview (A4/Letter)</span>
+        <span class="text-sm text-slate-400 font-medium flex items-center gap-2">
+          <i class="fa-solid fa-eye text-slate-500"></i> Page Preview (A4 / Letter)
+        </span>
       </div>
 
       <!-- PRINT SHEET CONTAINER -->
       <div id="printSheet" class="print-area bg-white text-slate-900 p-8 md:p-12 shadow-2xl rounded-sm w-full max-w-[800px] min-h-[1050px] flex flex-col justify-between font-mono text-xs border border-slate-200">
         
-        <!-- CONTENT WILL BE INJECTED DYNAMICALLY VIA JS -->
+        <!-- CONTENT INJECTED DYNAMICALLY VIA JS -->
         <div id="templateContent" class="flex-1 flex flex-col justify-between">
-          <!-- Default loaded in JS -->
+          <!-- Loaded in JS -->
         </div>
 
         <!-- FOOTER / CMYK OR GRAYSCALE BAR / CUSTOM NOTE -->
@@ -173,13 +272,13 @@
               <p id="printedFootnote" class="text-[10px] text-slate-600 italic">IT Print Verification Completed. Do not discard unless Chuck Norris says so.</p>
             </div>
             <div class="text-right">
-              <span class="text-[9px] text-slate-400 font-sans block">PAPERJAMMED.NET LOGICAL UNIT</span>
+              <span class="text-[9px] text-slate-400 font-sans font-bold block">PAPERJAMMED.NET LOGICAL UNIT</span>
             </div>
           </div>
 
           <!-- Color or Grayscale Calibration Bar for Printers -->
           <div id="calibrationBar" class="mt-3 grid grid-cols-6 h-3 rounded overflow-hidden border border-slate-300">
-            <!-- Dynamically populated in JavaScript -->
+            <!-- Dynamically populated in JS -->
           </div>
         </div>
 
@@ -190,6 +289,9 @@
 
   <!-- JAVASCRIPT LOGIC -->
   <script>
+    let currentJamPercent = 30;
+    let currentTemplateKey = 'jamRemover';
+
     const calibrationBars = {
       color: `
         <div class="bg-cyan-500 flex items-center justify-center text-[7px] text-white font-bold">C</div>
@@ -210,6 +312,10 @@
     };
 
     const templateConfig = {
+      jamRemover: { type: 'color' },
+      ghost: { type: 'bw' },
+      certificate: { type: 'bw' },
+      pcloadletter: { type: 'bw' },
       recipe: { type: 'bw' },
       technobabble: { type: 'color' },
       alignment: { type: 'color' },
@@ -217,9 +323,263 @@
     };
 
     const templates = {
+      jamRemover: `
+        <div>
+          <!-- Banner -->
+          <div class="bg-slate-900 text-white p-3 text-center rounded-sm uppercase tracking-widest font-black text-lg border-b-4 border-rose-600 mb-6 shadow-sm">
+            ⚠️ PRINTER JAM REMOVER
+          </div>
+
+          <p class="text-center text-xs text-slate-600 uppercase tracking-wider font-bold mb-4">
+            EXTRACTING RESIDUAL JAM FROM HARDWARE FEED ROLLERS
+          </p>
+
+          <!-- Bread Line Drawing SVG Container -->
+          <div class="flex justify-center my-4">
+            <div class="border-2 border-slate-900 p-5 rounded-lg bg-slate-50 shadow-inner text-center">
+              <svg id="breadSvg" viewBox="0 0 200 200" width="280" height="280" class="mx-auto">
+                <!-- Classic Bread Loaf Slice Crust Contour -->
+                <path d="M 35,75 C 20,40 60,18 100,20 C 140,18 180,40 165,75 C 172,120 160,172 145,178 C 120,183 80,183 55,178 C 40,172 28,120 35,75 Z" 
+                      fill="#fde047" stroke="#1e293b" stroke-width="4.5" stroke-linejoin="round"/>
+                
+                <!-- Inner Bread Crumb Surface -->
+                <path d="M 42,77 C 29,46 64,26 100,28 C 136,26 171,46 158,77 C 164,118 153,165 140,170 C 118,175 82,175 60,170 C 47,165 36,118 42,77 Z" 
+                      fill="#fef9c3" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="4 4"/>
+                
+                <!-- Smudged Jam Blotch (Dynamically Modified via JS) -->
+                <path id="jamBlotch" 
+                      d="M 100 100 Z" 
+                      fill="#be123c" opacity="0.88" stroke="#881337" stroke-width="1.5"
+                      style="transition: all 0.15s ease-out; filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.25));" />
+              </svg>
+
+              <span class="text-[10px] text-slate-500 font-mono mt-2 block font-bold">
+                DIAGNOSTIC VISUAL: BREAD SLICE (1:1 SCALE)
+              </span>
+            </div>
+          </div>
+
+          <!-- Analysis / Report Section -->
+          <div class="mt-6 border-2 border-slate-800 p-4 rounded bg-slate-50 space-y-2 text-xs">
+            <div class="font-bold border-b border-slate-400 pb-1 uppercase flex justify-between">
+              <span>📋 JAM EXTRACTION ANALYSIS REPORT</span>
+              <span class="text-rose-700">VAL: <span id="reportPercent">30</span>%</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 pt-1">
+              <div><strong>Extracted Flavor:</strong> <span id="jamFlavor">Smucker's Concord Grape</span></div>
+              <div><strong>Consistency:</strong> <span id="jamConsistency">Viscous Gelatinous Sludge</span></div>
+            </div>
+
+            <div>
+              <strong>Residual Roller Jam:</strong> <span id="jamRemaining">70% remaining in paper tray</span>
+            </div>
+
+            <div class="p-2.5 bg-rose-100 border-l-4 border-rose-600 text-rose-900 font-bold mt-3 text-xs">
+              💡 INSTRUCTION: Reprint page to continue removing jam from printer mechanisms.
+            </div>
+          </div>
+        </div>
+      `,
+
+      ghost: `
+        <div class="border-4 border-black p-6 bg-slate-50 font-mono text-slate-900 h-full flex flex-col justify-between">
+          <!-- Header -->
+          <div>
+            <div class="border-b-4 border-black pb-3 mb-4 text-center">
+              <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600 block">PARANORMAL HARDWARE PURGE PROTOCOL v4.1</span>
+              <h1 class="text-2xl font-black uppercase tracking-widest text-slate-950 my-1">
+                👻 GHOST-BUSTER SPECTRAL EXORCISM
+              </h1>
+              <p class="text-xs italic text-slate-700">Official Certificate of Ectoplasmic Buffer Flush & Poltergeist Removal</p>
+            </div>
+
+            <!-- Ritual Details Grid -->
+            <div class="grid grid-cols-2 gap-3 mb-4 p-3 border border-slate-400 bg-white text-[11px]">
+              <div>
+                <p><strong>EXORCIST:</strong> <span id="ghostTechName">Tech Dave (Ghost-Buster)</span></p>
+                <p><strong>PORT PURGED:</strong> LPT1 / TCP:9100</p>
+              </div>
+              <div>
+                <p><strong>ECTOPLASM DENSITY:</strong> 0.00 PPM (CLEARED)</p>
+                <p><strong>SPIRITUAL QUEUE:</strong> EMPTY</p>
+              </div>
+            </div>
+
+            <!-- Mystical Tech Sigil SVG -->
+            <div class="text-center my-4">
+              <div class="inline-block border-2 border-black p-4 bg-white rounded-full shadow-md">
+                <svg viewBox="0 0 120 120" width="110" height="110" class="mx-auto">
+                  <!-- Outer Rune Circle -->
+                  <circle cx="60" cy="60" r="54" fill="none" stroke="#000" stroke-width="2" stroke-dasharray="6 3"/>
+                  <circle cx="60" cy="60" r="46" fill="none" stroke="#000" stroke-width="1.5"/>
+                  
+                  <!-- Arcane Pentagram / Circuit Overlay -->
+                  <path d="M 60 14 L 100 90 L 20 38 L 100 38 L 20 90 Z" fill="none" stroke="#000" stroke-width="1.5"/>
+                  
+                  <!-- Center Ghost Icon -->
+                  <path d="M 60 38 C 50 38 44 46 44 56 L 44 76 C 44 78 48 74 52 76 C 56 78 60 74 64 76 C 68 78 72 74 76 76 L 76 56 C 76 46 70 38 60 38 Z" fill="none" stroke="#000" stroke-width="2"/>
+                  <circle cx="54" cy="52" r="2" fill="#000"/>
+                  <circle cx="66" cy="52" r="2" fill="#000"/>
+
+                  <!-- Ward Symbols -->
+                  <text x="56" y="28" font-size="9" font-family="monospace">☸</text>
+                  <text x="88" y="64" font-size="9" font-family="monospace">☤</text>
+                  <text x="24" y="64" font-size="9" font-family="monospace">⚕</text>
+                </svg>
+              </div>
+              <span class="text-[9px] text-slate-500 block mt-1 font-bold">FIG 1.1: HARDWARE WARDING SIGIL (DO NOT REMOVE FROM TRAY)</span>
+            </div>
+
+            <!-- Latin Technobabble Exorcism Chant -->
+            <div class="my-4 border-2 border-black p-4 bg-white space-y-2">
+              <p class="font-bold uppercase text-[11px] tracking-wider text-center border-b border-black pb-1">
+                📜 INCANTATIO EXORCISMUS PRINTERIS (RECITE ALOUD):
+              </p>
+              
+              <p class="italic text-slate-900 text-xs text-center leading-relaxed font-serif">
+                "Exorcizo te, creatura spooleri, in nomine TCP/IP et Spiritus Driveris!<br>
+                Abscede, demone jammius, ab hoc fuser assembly!<br>
+                Per sanctum packet loss, et buffer underrun, exorcizo ghost jobs nullus.<br>
+                Requiescat in pace, O paper tray. Amen. (System.exit(0);)"
+              </p>
+            </div>
+          </div>
+
+          <!-- Footer Instructions -->
+          <div class="border-t-2 border-black pt-3 text-[10px] text-slate-800 space-y-1">
+            <p><strong>PURGE SUMMARY:</strong> All haunts, phantom print jobs, midnight grinding noises, and rogue spooler demons have been permanently banished into the digital void.</p>
+            <p class="italic text-slate-600">If the printer spontaneously begins typing on its own again, light a candle and call IT immediately.</p>
+          </div>
+        </div>
+      `,
+
+      certificate: `
+        <div class="border-8 border-double border-slate-800 p-6 md:p-8 bg-slate-50 text-slate-900 font-sans h-full flex flex-col justify-between relative">
+          <!-- Inner Accent Line -->
+          <div class="border border-slate-400 p-6 flex-1 flex flex-col justify-between">
+            
+            <!-- Certificate Header -->
+            <div class="text-center space-y-2">
+              <span class="text-[11px] font-bold tracking-[0.3em] uppercase text-slate-600 block">OFFICIAL IT DEPARTMENT CERTIFICATION</span>
+              <h1 class="text-2xl md:text-3xl font-bold font-serif-header uppercase tracking-wider text-slate-950">
+                PRINTER INSTALLATION CERTIFICATE
+              </h1>
+              <div class="w-32 h-1 bg-slate-900 mx-auto mt-2"></div>
+            </div>
+
+            <!-- Body Text -->
+            <div class="text-center my-4 space-y-2">
+              <p class="text-xs text-slate-600 uppercase tracking-widest">THIS DULY CERTIFIES THAT THIS PRINTING UNIT HAS BEEN</p>
+              <p class="text-sm font-bold uppercase tracking-wider text-slate-900">PROFESSIONALLY INSTALLED, DRIVER-REGISTERED, AND CALIBRATED BY:</p>
+              <p id="certTechName" class="text-xl font-bold italic font-serif-header text-slate-950 underline underline-offset-4 py-1">
+                [ IT Department Staff ]
+              </p>
+            </div>
+
+            <!-- Certified Capabilities & Quirks -->
+            <div class="my-3 border-t border-b border-slate-300 py-4 font-mono text-xs space-y-2">
+              <p class="font-bold uppercase tracking-wider text-slate-950 text-center mb-3">
+                OFFICIALLY CERTIFIED HARDWARE CAPABILITIES:
+              </p>
+              
+              <ul class="space-y-2 text-slate-800 text-[11px] max-w-xl mx-auto">
+                <li class="flex items-start gap-2">
+                  <span class="font-bold text-slate-950">•</span>
+                  <span>Fully capable of jamming during your most important deadline.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="font-bold text-slate-950">•</span>
+                  <span>Running out of black toner the exact moment you need 47 copies.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="font-bold text-slate-950">•</span>
+                  <span>Producing that one mysterious blank page no one can ever explain.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="font-bold text-slate-950">•</span>
+                  <span>Spontaneously making aggressive grinding noises at 2:00 AM when the office is silent.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="font-bold text-slate-950">•</span>
+                  <span>Refusing to print black & white documents because Yellow Ink is at 2%.</span>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Footer Sign-off -->
+            <div class="flex justify-between items-end pt-4 mt-2 border-t border-slate-300 font-mono text-[10px]">
+              <div>
+                <p class="font-bold text-slate-900">DATE CERTIFIED:</p>
+                <p class="text-slate-700">${new Date().toLocaleDateString()}</p>
+              </div>
+
+              <div class="text-center">
+                <div class="w-40 border-b border-slate-800 mb-1"></div>
+                <p class="font-bold text-slate-900 uppercase">OFFICIAL SEAL OF APPROVAL</p>
+              </div>
+
+              <div class="text-right">
+                <p class="font-bold text-slate-900">SYSTEM STATUS:</p>
+                <p class="text-slate-700">100% OPERATIONAL</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      `,
+
+      pcloadletter: `
+        <div class="flex flex-col justify-between h-full py-4">
+          <!-- Top Retro Status Bar -->
+          <div class="border-b-4 border-black pb-3 flex justify-between items-center font-mono">
+            <div>
+              <span class="text-xs font-black uppercase tracking-widest text-slate-500 block">SYSTEM ERROR DIAGNOSTIC</span>
+              <span class="text-sm font-bold text-slate-900">LASERJET III - PORT LPT1:</span>
+            </div>
+            <div class="text-right">
+              <span class="border-2 border-black text-slate-900 text-xs px-2 py-1 font-bold uppercase tracking-wider">CODE: 21</span>
+            </div>
+          </div>
+
+          <!-- Ink-Friendly Retro Dot-Matrix LCD Display Window (No Solid Black Background) -->
+          <div class="my-8 border-4 border-black border-double bg-slate-50 p-8 rounded-sm text-center">
+            <p class="text-slate-700 font-dotmatrix text-2xl md:text-3xl tracking-widest mb-2 font-bold uppercase">
+              ** PRINTER STATUS ERROR **
+            </p>
+            
+            <h1 class="text-slate-950 font-dotmatrix text-6xl md:text-8xl font-black tracking-widest my-4 py-1">
+              PC LOAD LETTER
+            </h1>
+
+            <p class="text-slate-800 font-dotmatrix text-xl md:text-2xl tracking-widest mt-2 font-bold uppercase">
+              [ PAPER CASSETTE EMPTY: LOAD LETTER ]
+            </p>
+          </div>
+
+          <!-- Iconic Sarcastic Troubleshooting Guide -->
+          <div class="border-2 border-black p-6 bg-slate-50 space-y-4 font-mono text-xs">
+            <div class="border-b border-black pb-2 font-bold uppercase tracking-wider text-sm flex justify-between items-center">
+              <span>RECOMMENDED USER ACTION</span>
+              <span class="text-[10px] text-slate-500">REF: INITECH-8832</span>
+            </div>
+
+            <ol class="list-decimal pl-5 space-y-2 text-slate-800 text-xs">
+              <li><strong>Do not panic.</strong> Repeat slowly: <em>"What the f*** does PC Load Letter mean?"</em></li>
+              <li>Refrain from retrieving a baseball bat and carrying printer to an open grassy field.</li>
+              <li>Load standard Letter size paper (8.5" x 11") into Paper Cassette 2.</li>
+              <li>Contemplate career choices at Initech, LLC.</li>
+            </ol>
+
+            <div class="pt-3 border-t border-slate-300 text-slate-600 italic text-[11px] text-center">
+              "Why should I change my name? He's the one who sucks." — Michael Bolton (1999)
+            </div>
+          </div>
+        </div>
+      `,
+
       recipe: `
         <div>
-          <!-- Recipe Header -->
           <div class="border-b-4 border-black pb-3 mb-6 text-center">
             <span class="text-xs font-bold uppercase tracking-widest text-slate-500">GRANDMA'S SECRET IT KITCHEN</span>
             <h1 class="text-2xl font-black uppercase tracking-tight">EMERGENCY TONER SOUP</h1>
@@ -227,7 +587,6 @@
           </div>
 
           <div class="grid grid-cols-12 gap-6">
-            <!-- Ingredients -->
             <div class="col-span-5 border-r border-slate-300 pr-4">
               <h3 class="font-bold border-b border-black text-xs uppercase mb-2">Ingredients</h3>
               <ul class="space-y-2 text-xs">
@@ -240,7 +599,6 @@
               </ul>
             </div>
 
-            <!-- Steps -->
             <div class="col-span-7">
               <h3 class="font-bold border-b border-black text-xs uppercase mb-2">Instructions</h3>
               <ol class="space-y-2 text-xs list-decimal pl-4">
@@ -260,7 +618,6 @@
 
       technobabble: `
         <div>
-          <!-- Header -->
           <div class="border-b-2 border-black pb-4 mb-6 flex justify-between items-start">
             <div>
               <h1 class="text-xl font-extrabold tracking-tight uppercase">ULTRA-DIAGNOSTIC PRINTER CALIBRATION REPORT</h1>
@@ -271,7 +628,6 @@
             </div>
           </div>
 
-          <!-- Technical Stats -->
           <div class="grid grid-cols-2 gap-4 mb-6 border border-slate-300 p-4 bg-slate-50">
             <div>
               <p><strong>DEVICE HOST:</strong> LOCAL_PRN_PRANK_01</p>
@@ -285,7 +641,6 @@
             </div>
           </div>
 
-          <!-- Narrative Diagnostic -->
           <div class="space-y-4 text-slate-800 leading-relaxed text-sm">
             <p class="font-bold border-b border-slate-300 pb-1 uppercase">1. SYSTEM INTERPRETER LOGS</p>
             <p>Initializing retro-encabulator... The primary waneshaft has successfully aligned with the lunar wane-shafts. No unwanted side-flector vibrations were detected in the marzelvanes.</p>
@@ -316,18 +671,14 @@
 
           <p class="mb-4 text-center font-bold">PLEASE VERIFY THAT THE BELOW PARALLEL LINES DO NOT CROSS OR CURVE</p>
 
-          <!-- Intentionally Un-parallel Lines SVG -->
           <div class="my-8 border border-slate-400 p-6 flex flex-col items-center justify-center">
             <svg class="w-full h-48" viewBox="0 0 500 150" fill="none" stroke="black" stroke-width="2">
-              <!-- Line 1: Straight -->
               <line x1="10" y1="20" x2="490" y2="20" />
               <text x="15" y="15" font-size="8" fill="black">LINE A (Ref. True North)</text>
 
-              <!-- Line 2: Curving wildly -->
               <path d="M 10 60 Q 250 120 490 60" stroke-dasharray="4" />
               <text x="15" y="55" font-size="8" fill="black">LINE B ("Strictly Parallel")</text>
 
-              <!-- Line 3: Intersecting -->
               <line x1="10" y1="130" x2="490" y2="90" />
               <text x="15" y="125" font-size="8" fill="black">LINE C (Linear Vector)</text>
             </svg>
@@ -356,7 +707,6 @@
 
       invoice: `
         <div>
-          <!-- Fake Invoice Header -->
           <div class="flex justify-between items-start border-b-2 border-black pb-4 mb-6">
             <div>
               <h1 class="text-2xl font-black tracking-tight uppercase">ACME ABSURDITY SERVICES</h1>
@@ -370,14 +720,12 @@
             </div>
           </div>
 
-          <!-- Billed To -->
           <div class="mb-6 p-3 bg-slate-100 border border-slate-200">
             <p class="font-bold text-xs">BILLED TO:</p>
             <p class="text-sm font-semibold">Unsuspecting Printer Owner / Recipient</p>
             <p class="text-xs">Department of "Who Left This On The Printer?"</p>
           </div>
 
-          <!-- Invoice Table -->
           <table class="w-full text-left border-collapse mb-6">
             <thead>
               <tr class="border-b border-black text-xs">
@@ -409,7 +757,6 @@
             </tbody>
           </table>
 
-          <!-- Totals -->
           <div class="flex justify-end mb-8">
             <div class="w-1/2 space-y-1 text-right text-xs">
               <div class="flex justify-between">
@@ -434,35 +781,97 @@
       `
     };
 
-    function setTemplate(key) {
-      if (templates[key]) {
-        const contentEl = document.getElementById('templateContent');
-        if (contentEl) {
-          contentEl.innerHTML = templates[key];
-        }
+    function updateJamGraphic(val) {
+      const jamBlotch = document.getElementById('jamBlotch');
+      const reportPercent = document.getElementById('reportPercent');
+      const jamFlavor = document.getElementById('jamFlavor');
+      const jamConsistency = document.getElementById('jamConsistency');
+      const jamRemaining = document.getElementById('jamRemaining');
+
+      if (reportPercent) reportPercent.textContent = val;
+
+      if (jamBlotch) {
+        const rX = (val / 100) * 52;
+        const rY = (val / 100) * 58;
         
-        // Dynamic switch for calibration bar (Grayscale vs CMYK)
-        const barType = templateConfig[key]?.type || 'color';
-        const barEl = document.getElementById('calibrationBar');
-        if (barEl) {
-          barEl.innerHTML = calibrationBars[barType];
+        if (val == 0) {
+          jamBlotch.setAttribute('d', 'M 100 105 Z');
+        } else {
+          // Organic SVG blob generator over the loaf-shaped bread surface
+          jamBlotch.setAttribute('d', 
+            `M ${100 - rX},105 ` +
+            `C ${100 - rX},${105 - rY * 0.9} ${100 + rX * 1.1},${105 - rY * 0.85} ${100 + rX},105 ` +
+            `C ${100 + rX * 1.15},${105 + rY * 1.05} ${100 - rX * 0.85},${105 + rY * 1.15} ${100 - rX},105 Z`
+          );
         }
+      }
+
+      // Dynamic Sarcastic Diagnostics
+      if (val == 0) {
+        if (jamFlavor) jamFlavor.textContent = "None Detected (Clean Paper Feed)";
+        if (jamConsistency) jamConsistency.textContent = "Dry / Pure Mechanical Friction";
+        if (jamRemaining) jamRemaining.textContent = "100% trapped deep inside fuser gears";
+      } else if (val <= 35) {
+        if (jamFlavor) jamFlavor.textContent = "Smucker's Concord Grape (Industrial)";
+        if (jamConsistency) jamConsistency.textContent = "Sticky & Semi-Viscous Gelatin";
+        if (jamRemaining) jamRemaining.textContent = `${100 - val}% remaining in roller mechanisms`;
+      } else if (val <= 70) {
+        if (jamFlavor) jamFlavor.textContent = "Artisanal Seeded Raspberry Jam";
+        if (jamConsistency) jamConsistency.textContent = "Grit-Infused Hydraulic Sludge";
+        if (jamRemaining) jamRemaining.textContent = `${100 - val}% remaining on rubber feed tires`;
+      } else {
+        if (jamFlavor) jamFlavor.textContent = "High-Fructose Synthetic Marmalade";
+        if (jamConsistency) jamConsistency.textContent = "Crystalline Epoxy-Level Tarry Compound";
+        if (jamRemaining) jamRemaining.textContent = `${100 - val}% remaining (Hardware virtually cleared!)`;
       }
     }
 
-    function initApp() {
-      setTemplate('recipe');
+    function handleJamSliderChange(val) {
+      currentJamPercent = val;
+      const displayEl = document.getElementById('sliderValDisplay');
+      if (displayEl) displayEl.textContent = val;
+      updateJamGraphic(val);
     }
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initApp);
-    } else {
-      initApp();
+    function setTemplate(key) {
+      currentTemplateKey = key;
+      const contentEl = document.getElementById('templateContent');
+      if (contentEl && templates[key]) {
+        contentEl.innerHTML = templates[key];
+      }
+      
+      // Toggle Jam Remover slider visibility in sidebar
+      const jamControls = document.getElementById('jamControlsBox');
+      if (jamControls) {
+        if (key === 'jamRemover') {
+          jamControls.style.display = 'block';
+        } else {
+          jamControls.style.display = 'none';
+        }
+      }
+
+      // Update calibration bar (CMYK vs Grayscale)
+      const barType = templateConfig[key]?.type || 'color';
+      const barEl = document.getElementById('calibrationBar');
+      if (barEl) {
+        barEl.innerHTML = calibrationBars[barType];
+      }
+
+      // Refresh jam graphic if jamRemover is selected
+      if (key === 'jamRemover') {
+        updateJamGraphic(currentJamPercent);
+      }
+
+      // Sync custom text field to active certificate or ghost technician names
+      updateCustomNote();
     }
 
     function updateCustomNote() {
       const inputVal = document.getElementById('customNote')?.value || '';
       const footnoteEl = document.getElementById('printedFootnote');
+      const certTechEl = document.getElementById('certTechName');
+      const ghostTechEl = document.getElementById('ghostTechName');
+
       if (footnoteEl) {
         if (inputVal.trim() !== '') {
           footnoteEl.innerText = inputVal;
@@ -470,6 +879,32 @@
           footnoteEl.innerText = "IT Print Verification Completed. Do not discard unless Chuck Norris says so.";
         }
       }
+
+      if (certTechEl) {
+        if (inputVal.trim() !== '') {
+          certTechEl.innerText = inputVal;
+        } else {
+          certTechEl.innerText = "[ IT Department Staff ]";
+        }
+      }
+
+      if (ghostTechEl) {
+        if (inputVal.trim() !== '') {
+          ghostTechEl.innerText = inputVal;
+        } else {
+          ghostTechEl.innerText = "Tech Dave (Ghost-Buster)";
+        }
+      }
+    }
+
+    function initApp() {
+      setTemplate('jamRemover');
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
     }
   </script>
 </body>
