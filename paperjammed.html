@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PaperJammed.net - Sarcastic Printer Diagnostic Tool</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Custom Styles for Print Formatting */
+    @media print {
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        margin: 0;
+        padding: 0;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-area {
+        display: block !important;
+        box-shadow: none !important;
+        border: none !important;
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      /* Ensure precise print colors if requested */
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    @page {
+      size: auto;
+      margin: 15mm;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col">
+
+  <!-- TOP HEADER (No Print) -->
+  <header class="no-print bg-slate-800 border-b border-slate-700 p-4 sticky top-0 z-50 shadow-md">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div class="flex items-center gap-3">
+        <div class="p-2.5 bg-indigo-600 rounded-lg text-white font-bold text-xl">
+          <i class="fa-solid fa-print"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight text-white">PaperJammed<span class="text-indigo-400">.net</span></h1>
+          <p class="text-xs text-slate-400">The IT-approved printer setup tool that leaves a smile.</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+        <button onclick="window.print()" class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-2.5 rounded-lg shadow-lg flex items-center justify-center gap-2 transition duration-200 cursor-pointer">
+          <i class="fa-solid fa-print text-lg"></i>
+          <span>PRINT TEST PAGE NOW</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN BODY LAYOUT -->
+  <div class="max-w-7xl mx-auto w-full flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- SIDEBAR / CONTROLS (No Print) -->
+    <aside class="no-print lg:col-span-4 flex flex-col gap-6">
+      
+      <!-- Template Selector -->
+      <div class="bg-slate-800 rounded-xl p-5 border border-slate-700 shadow-sm">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">1. Select Prank Template</h2>
+        
+        <div class="space-y-2">
+          <!-- Option 1: Recipe (B/W - Top) -->
+          <label onclick="setTemplate('recipe')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-slate-700 hover:border-indigo-500 bg-slate-800/50 hover:bg-slate-700/50 cursor-pointer transition">
+            <input type="radio" name="template" value="recipe" checked class="mt-1 accent-indigo-500">
+            <div class="w-full">
+              <div class="font-medium text-white flex items-center justify-between gap-2">
+                <span>Toner Soup Recipe</span>
+                <span class="text-[10px] bg-slate-700 text-slate-400 font-bold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0">B/W</span>
+              </div>
+              <p class="text-xs text-slate-400 mt-0.5">An official-looking recipe card with completely chaotic ingredients.</p>
+            </div>
+          </label>
+
+          <!-- Option 2: Technobabble -->
+          <label onclick="setTemplate('technobabble')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-slate-700 hover:border-indigo-500 bg-slate-800/50 hover:bg-slate-700/50 cursor-pointer transition">
+            <input type="radio" name="template" value="technobabble" class="mt-1 accent-indigo-500">
+            <div class="w-full">
+              <div class="font-medium text-white flex items-center justify-between gap-2">
+                <span>Technobabble Report</span>
+                <span class="text-[10px] bg-slate-700 text-emerald-300 px-1.5 py-0.5 rounded whitespace-nowrap shrink-0">B/W + Color</span>
+              </div>
+              <p class="text-xs text-slate-400 mt-0.5">Looks official, but filled with absurd futuristic IT nonsensical jargon.</p>
+            </div>
+          </label>
+
+          <!-- Option 3: Alignment -->
+          <label onclick="setTemplate('alignment')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-slate-700 hover:border-indigo-500 bg-slate-800/50 hover:bg-slate-700/50 cursor-pointer transition">
+            <input type="radio" name="template" value="alignment" class="mt-1 accent-indigo-500">
+            <div class="w-full">
+              <div class="font-medium text-white flex items-center justify-between gap-2">
+                <span>"Parallel" Alignment Test</span>
+                <span class="text-[10px] bg-slate-700 text-emerald-300 px-1.5 py-0.5 rounded whitespace-nowrap shrink-0">B/W + Color</span>
+              </div>
+              <p class="text-xs text-slate-400 mt-0.5">Claim to test straight lines, but lines clearly cross or veer off.</p>
+            </div>
+          </label>
+
+          <!-- Option 4: Invoice -->
+          <label onclick="setTemplate('invoice')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-slate-700 hover:border-indigo-500 bg-slate-800/50 hover:bg-slate-700/50 cursor-pointer transition">
+            <input type="radio" name="template" value="invoice" class="mt-1 accent-indigo-500">
+            <div class="w-full">
+              <div class="font-medium text-white flex items-center justify-between gap-2">
+                <span>Wacky Order Receipt</span>
+                <span class="text-[10px] bg-slate-700 text-emerald-300 px-1.5 py-0.5 rounded whitespace-nowrap shrink-0">B/W + Color</span>
+              </div>
+              <p class="text-xs text-slate-400 mt-0.5">A fake receipt for bizarre items like 'Perpetual Sarcasm License'.</p>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Customization Box -->
+      <div class="bg-slate-800 rounded-xl p-5 border border-slate-700 shadow-sm">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">2. Optional Customization</h2>
+        <label for="customNote" class="block text-xs text-slate-300 mb-1">Add Footnote / Tech Note (e.g., "Tested by Dave @ 2:30 PM"):</label>
+        <input type="text" id="customNote" oninput="updateCustomNote()" placeholder="e.g. IT Department Approved #402" 
+          class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+      </div>
+
+      <!-- Instructions & Context -->
+      <div class="bg-slate-800/60 rounded-xl p-5 border border-slate-700/60 text-xs text-slate-400 space-y-2">
+        <div class="flex items-center gap-2 text-indigo-400 font-semibold text-sm">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>Why use this?</span>
+        </div>
+        <p>Adding a printer to Chrome/Windows often requires sending an initial print job to ensure full system registration. Use this page to verify paper feed, alignment, and color levels—while giving the next person at the tray a good laugh!</p>
+      </div>
+
+      <!-- Monetization Slot Placeholder (Ad Banner) -->
+      <div class="bg-slate-800/40 border border-dashed border-slate-700 rounded-xl p-4 text-center">
+        <span class="text-[10px] uppercase font-mono text-slate-500 block mb-1">Advertisement Placeholder</span>
+        <div class="bg-slate-900/60 h-32 rounded flex items-center justify-center text-slate-600 text-xs font-mono">
+          [ 300 x 250 Responsive Ad Unit ]
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- MAIN PREVIEW CANVAS (Print Area) -->
+    <main class="lg:col-span-8 flex flex-col items-center">
+      
+      <div class="no-print w-full flex justify-between items-center mb-3">
+        <span class="text-sm text-slate-400 font-medium">Page Preview (A4/Letter)</span>
+      </div>
+
+      <!-- PRINT SHEET CONTAINER -->
+      <div id="printSheet" class="print-area bg-white text-slate-900 p-8 md:p-12 shadow-2xl rounded-sm w-full max-w-[800px] min-h-[1050px] flex flex-col justify-between font-mono text-xs border border-slate-200">
+        
+        <!-- CONTENT WILL BE INJECTED DYNAMICALLY VIA JS -->
+        <div id="templateContent" class="flex-1 flex flex-col justify-between">
+          <!-- Default loaded in JS -->
+        </div>
+
+        <!-- FOOTER / CMYK OR GRAYSCALE BAR / CUSTOM NOTE -->
+        <div class="mt-8 pt-4 border-t border-slate-300">
+          <div class="flex justify-between items-end">
+            <div>
+              <p class="font-bold text-[11px] text-slate-800 uppercase tracking-wider">SYSTEM DIAGNOSTIC COMPLETION STATUS: <span class="text-slate-900">SUCCESS</span></p>
+              <p id="printedFootnote" class="text-[10px] text-slate-600 italic">IT Print Verification Completed. Do not discard unless Chuck Norris says so.</p>
+            </div>
+            <div class="text-right">
+              <span class="text-[9px] text-slate-400 font-sans block">PAPERJAMMED.NET LOGICAL UNIT</span>
+            </div>
+          </div>
+
+          <!-- Color or Grayscale Calibration Bar for Printers -->
+          <div id="calibrationBar" class="mt-3 grid grid-cols-6 h-3 rounded overflow-hidden border border-slate-300">
+            <!-- Dynamically populated in JavaScript -->
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    const calibrationBars = {
+      color: `
+        <div class="bg-cyan-500 flex items-center justify-center text-[7px] text-white font-bold">C</div>
+        <div class="bg-fuchsia-600 flex items-center justify-center text-[7px] text-white font-bold">M</div>
+        <div class="bg-yellow-400 flex items-center justify-center text-[7px] text-black font-bold">Y</div>
+        <div class="bg-black flex items-center justify-center text-[7px] text-white font-bold">K</div>
+        <div class="bg-slate-400 flex items-center justify-center text-[7px] text-white font-bold">50%</div>
+        <div class="bg-slate-200 flex items-center justify-center text-[7px] text-slate-700 font-bold">10%</div>
+      `,
+      bw: `
+        <div class="bg-black flex items-center justify-center text-[7px] text-white font-bold">100%</div>
+        <div class="bg-slate-800 flex items-center justify-center text-[7px] text-white font-bold">80%</div>
+        <div class="bg-slate-600 flex items-center justify-center text-[7px] text-white font-bold">60%</div>
+        <div class="bg-slate-400 flex items-center justify-center text-[7px] text-white font-bold">40%</div>
+        <div class="bg-slate-200 flex items-center justify-center text-[7px] text-slate-800 font-bold">20%</div>
+        <div class="bg-slate-100 flex items-center justify-center text-[7px] text-slate-600 font-bold">10%</div>
+      `
+    };
+
+    const templateConfig = {
+      recipe: { type: 'bw' },
+      technobabble: { type: 'color' },
+      alignment: { type: 'color' },
+      invoice: { type: 'color' }
+    };
+
+    const templates = {
+      recipe: `
+        <div>
+          <!-- Recipe Header -->
+          <div class="border-b-4 border-black pb-3 mb-6 text-center">
+            <span class="text-xs font-bold uppercase tracking-widest text-slate-500">GRANDMA'S SECRET IT KITCHEN</span>
+            <h1 class="text-2xl font-black uppercase tracking-tight">EMERGENCY TONER SOUP</h1>
+            <p class="text-xs italic">Serves 1 Stressed System Administrator • Prep Time: 5 mins</p>
+          </div>
+
+          <div class="grid grid-cols-12 gap-6">
+            <!-- Ingredients -->
+            <div class="col-span-5 border-r border-slate-300 pr-4">
+              <h3 class="font-bold border-b border-black text-xs uppercase mb-2">Ingredients</h3>
+              <ul class="space-y-2 text-xs">
+                <li>• 1 Cup Cyan Pigment Powder</li>
+                <li>• 2 Tbsp Mechanical Friction</li>
+                <li>• A Pinch of Compressed Air</li>
+                <li>• 3 Sheets of Crumpled Paper</li>
+                <li>• 100ml Unfiltered Java Code</li>
+                <li>• Dash of Despair (Optional)</li>
+              </ul>
+            </div>
+
+            <!-- Steps -->
+            <div class="col-span-7">
+              <h3 class="font-bold border-b border-black text-xs uppercase mb-2">Instructions</h3>
+              <ol class="space-y-2 text-xs list-decimal pl-4">
+                <li>Open the printer front door while making direct eye contact with the error light.</li>
+                <li>Gently shake the cartridge until it yields approximately 50 extra pages.</li>
+                <li>Fold paper into small squares and simmer over the fuser roller at 180°C.</li>
+                <li>Garnish with freshly cleared print queues and serve warm.</li>
+              </ol>
+            </div>
+          </div>
+
+          <div class="mt-8 p-4 bg-slate-100 border-l-2 border-slate-800 text-xs">
+            <strong>CHEF'S NOTE:</strong> If soup tastes like burned plastic, your fuser unit is working at optimal capacity. Do not ingest actual toner.
+          </div>
+        </div>
+      `,
+
+      technobabble: `
+        <div>
+          <!-- Header -->
+          <div class="border-b-2 border-black pb-4 mb-6 flex justify-between items-start">
+            <div>
+              <h1 class="text-xl font-extrabold tracking-tight uppercase">ULTRA-DIAGNOSTIC PRINTER CALIBRATION REPORT</h1>
+              <p class="text-xs text-slate-600">Sub-system Verification & Quantum Particle Alignment</p>
+            </div>
+            <div class="text-right">
+              <span class="border border-black px-2 py-1 font-bold text-xs uppercase">STATUS: OPTIMAL</span>
+            </div>
+          </div>
+
+          <!-- Technical Stats -->
+          <div class="grid grid-cols-2 gap-4 mb-6 border border-slate-300 p-4 bg-slate-50">
+            <div>
+              <p><strong>DEVICE HOST:</strong> LOCAL_PRN_PRANK_01</p>
+              <p><strong>FLUX DENSITY:</strong> 98.42% nominal</p>
+              <p><strong>CYAN DAMPENING:</strong> Active (22 micro-pascals)</p>
+            </div>
+            <div>
+              <p><strong>PAPER TENSION:</strong> 42.1 Gravitons</p>
+              <p><strong>SARCASM BUFFER:</strong> 100% Full</p>
+              <p><strong>GHOST JOBS CLEAR:</strong> YES</p>
+            </div>
+          </div>
+
+          <!-- Narrative Diagnostic -->
+          <div class="space-y-4 text-slate-800 leading-relaxed text-sm">
+            <p class="font-bold border-b border-slate-300 pb-1 uppercase">1. SYSTEM INTERPRETER LOGS</p>
+            <p>Initializing retro-encabulator... The primary waneshaft has successfully aligned with the lunar wane-shafts. No unwanted side-flector vibrations were detected in the marzelvanes.</p>
+            
+            <p>Thermal nozzle sweep completed. All 4,800 micro-injectors fired with exactly 0.0003 milliseconds of latency. If this page printed cleanly, your hardware is operating in 4-dimensional harmony with local space-time.</p>
+
+            <div class="my-6 p-4 border-l-4 border-black bg-slate-100 italic">
+              "Warning: If page turns blue, do not panic. Simply stroke the paper feeding tray three times and whisper encouraging words to the toner drum."
+            </div>
+
+            <p class="font-bold border-b border-slate-300 pb-1 uppercase">2. NOZZLE RECEPTIVITY TEST</p>
+            <p class="font-mono text-xs">
+              [X] Black Pigment Node ....... OK<br>
+              [X] Sarcasm Synthesizer ...... OK<br>
+              [X] Paper Jam Predictor ...... FAILED (As expected)<br>
+              [X] Wifi Signal Magic ........ OK
+            </p>
+          </div>
+        </div>
+      `,
+
+      alignment: `
+        <div>
+          <div class="border-b-2 border-black pb-4 mb-6 text-center">
+            <h1 class="text-2xl font-bold uppercase tracking-wider">PARALLEL ALIGNMENT & GEOMETRY MATRIX</h1>
+            <p class="text-xs text-slate-600">High-Precision Optical Calibration Standard (ISO-9001-PRANK)</p>
+          </div>
+
+          <p class="mb-4 text-center font-bold">PLEASE VERIFY THAT THE BELOW PARALLEL LINES DO NOT CROSS OR CURVE</p>
+
+          <!-- Intentionally Un-parallel Lines SVG -->
+          <div class="my-8 border border-slate-400 p-6 flex flex-col items-center justify-center">
+            <svg class="w-full h-48" viewBox="0 0 500 150" fill="none" stroke="black" stroke-width="2">
+              <!-- Line 1: Straight -->
+              <line x1="10" y1="20" x2="490" y2="20" />
+              <text x="15" y="15" font-size="8" fill="black">LINE A (Ref. True North)</text>
+
+              <!-- Line 2: Curving wildly -->
+              <path d="M 10 60 Q 250 120 490 60" stroke-dasharray="4" />
+              <text x="15" y="55" font-size="8" fill="black">LINE B ("Strictly Parallel")</text>
+
+              <!-- Line 3: Intersecting -->
+              <line x1="10" y1="130" x2="490" y2="90" />
+              <text x="15" y="125" font-size="8" fill="black">LINE C (Linear Vector)</text>
+            </svg>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 my-6 text-center">
+            <div class="border border-slate-300 p-3">
+              <span class="block font-bold">BOX 1: STRAIGHTNESS</span>
+              <div class="w-12 h-12 border-2 border-black rounded-full mx-auto my-2 flex items-center justify-center">
+                <span class="text-lg">✕</span>
+              </div>
+              <span class="text-[10px] text-slate-500">Crooked as a river</span>
+            </div>
+            <div class="border border-slate-300 p-3">
+              <span class="block font-bold">BOX 2: EQUIDISTANT</span>
+              <div class="w-12 h-12 border-2 border-black mx-auto my-2 flex items-center justify-center">
+                <span class="text-lg">?</span>
+              </div>
+              <span class="text-[10px] text-slate-500">Not even close</span>
+            </div>
+          </div>
+
+          <p class="text-xs text-center italic">If Line A and Line B intersect on your paper, your printer has transcended Euclidean Geometry. Congratulations!</p>
+        </div>
+      `,
+
+      invoice: `
+        <div>
+          <!-- Fake Invoice Header -->
+          <div class="flex justify-between items-start border-b-2 border-black pb-4 mb-6">
+            <div>
+              <h1 class="text-2xl font-black tracking-tight uppercase">ACME ABSURDITY SERVICES</h1>
+              <p class="text-xs">123 Cloud Server Lane, Suite 404</p>
+              <p class="text-xs">Email: billing@dev-null.void</p>
+            </div>
+            <div class="text-right">
+              <h2 class="text-xl font-bold text-slate-800">INVOICE</h2>
+              <p class="text-xs">INV-2026-9941</p>
+              <p class="text-xs">Date: ${new Date().toLocaleDateString()}</p>
+            </div>
+          </div>
+
+          <!-- Billed To -->
+          <div class="mb-6 p-3 bg-slate-100 border border-slate-200">
+            <p class="font-bold text-xs">BILLED TO:</p>
+            <p class="text-sm font-semibold">Unsuspecting Printer Owner / Recipient</p>
+            <p class="text-xs">Department of "Who Left This On The Printer?"</p>
+          </div>
+
+          <!-- Invoice Table -->
+          <table class="w-full text-left border-collapse mb-6">
+            <thead>
+              <tr class="border-b border-black text-xs">
+                <th class="py-2">QTY</th>
+                <th class="py-2">DESCRIPTION</th>
+                <th class="py-2 text-right">UNIT PRICE</th>
+                <th class="py-2 text-right">AMOUNT</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 text-xs">
+              <tr>
+                <td class="py-2.5">1</td>
+                <td class="py-2.5">Perpetual Sarcasm Maintenance License (Enterprise)</td>
+                <td class="py-2.5 text-right">$199.00</td>
+                <td class="py-2.5 text-right">$199.00</td>
+              </tr>
+              <tr>
+                <td class="py-2.5">300</td>
+                <td class="py-2.5">Extra Grams of Invisible Yellow Dot Tracking Ink</td>
+                <td class="py-2.5 text-right">$0.50</td>
+                <td class="py-2.5 text-right">$150.00</td>
+              </tr>
+              <tr>
+                <td class="py-2.5">1</td>
+                <td class="py-2.5">Emergency IT Percussive Maintenance (Kicking the tray)</td>
+                <td class="py-2.5 text-right">$85.00</td>
+                <td class="py-2.5 text-right">$85.00</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Totals -->
+          <div class="flex justify-end mb-8">
+            <div class="w-1/2 space-y-1 text-right text-xs">
+              <div class="flex justify-between">
+                <span>Subtotal:</span>
+                <span>$434.00</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Paper Jam Insurance:</span>
+                <span>$12.50</span>
+              </div>
+              <div class="flex justify-between font-bold text-sm border-t border-black pt-1">
+                <span>TOTAL DUE:</span>
+                <span>$446.50</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-3 border border-black text-center font-bold bg-slate-50">
+            PAYMENT STATUS: AUTO-DEBITED FROM YOUR GOOD MOOD
+          </div>
+        </div>
+      `
+    };
+
+    function setTemplate(key) {
+      if (templates[key]) {
+        const contentEl = document.getElementById('templateContent');
+        if (contentEl) {
+          contentEl.innerHTML = templates[key];
+        }
+        
+        // Dynamic switch for calibration bar (Grayscale vs CMYK)
+        const barType = templateConfig[key]?.type || 'color';
+        const barEl = document.getElementById('calibrationBar');
+        if (barEl) {
+          barEl.innerHTML = calibrationBars[barType];
+        }
+      }
+    }
+
+    function initApp() {
+      setTemplate('recipe');
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
+    }
+
+    function updateCustomNote() {
+      const inputVal = document.getElementById('customNote')?.value || '';
+      const footnoteEl = document.getElementById('printedFootnote');
+      if (footnoteEl) {
+        if (inputVal.trim() !== '') {
+          footnoteEl.innerText = inputVal;
+        } else {
+          footnoteEl.innerText = "IT Print Verification Completed. Do not discard unless Chuck Norris says so.";
+        }
+      }
+    }
+  </script>
+</body>
+</html>
