@@ -30,6 +30,19 @@
         margin: 0 !important;
         padding: 0 !important;
       }
+      .print-page {
+        page-break-after: always !important;
+        break-after: page !important;
+        min-height: 98vh !important;
+        margin: 0 !important;
+        padding: 10mm !important;
+        box-shadow: none !important;
+        border: none !important;
+      }
+      .print-page:last-child {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
@@ -60,14 +73,20 @@
         <div>
           <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
             PaperJammed<span class="text-rose-400">.net</span>
-            <span class="text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full font-mono uppercase">v1.6</span>
+            <span class="text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full font-mono uppercase">v1.8</span>
           </h1>
           <p class="text-xs text-slate-400">The IT-approved printer setup tool that leaves a smile.</p>
         </div>
       </div>
 
       <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
-        <button onclick="window.print()" class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-2.5 rounded-lg shadow-lg flex items-center justify-center gap-2 transition duration-200 cursor-pointer">
+        <!-- Live Global Print Counter Badge -->
+        <span class="text-xs bg-slate-900/80 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg font-mono flex items-center gap-2 shadow-inner">
+          <i class="fa-solid fa-fire text-amber-400 text-sm"></i>
+          <span><strong id="globalPrintCount">...</strong> Pages Printed</span>
+        </span>
+
+        <button onclick="handlePrintAction()" class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-2.5 rounded-lg shadow-lg flex items-center justify-center gap-2 transition duration-200 cursor-pointer">
           <i class="fa-solid fa-print text-lg"></i>
           <span>PRINT TEST PAGE NOW</span>
         </button>
@@ -126,7 +145,59 @@
             </div>
           </div>
 
-          <!-- Option 2: Ghost Exorcism (NEW!) -->
+          <!-- Option 2: Tray Feed Stress Test -->
+          <div>
+            <label onclick="setTemplate('trayfeed')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-cyan-500/50 hover:border-cyan-400 bg-cyan-950/20 hover:bg-cyan-900/30 cursor-pointer transition">
+              <input type="radio" name="template" value="trayfeed" class="mt-1 accent-cyan-500">
+              <div class="w-full">
+                <div class="font-medium text-white flex items-center justify-between gap-2">
+                  <span class="flex items-center gap-1.5 text-cyan-300 font-bold">
+                    <i class="fa-solid fa-copy text-xs"></i> Tray Feed Stress Test
+                  </span>
+                  <span class="text-[10px] bg-cyan-500 text-slate-950 font-extrabold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0 uppercase tracking-wider">NEW!</span>
+                </div>
+                <p class="text-xs text-slate-300 mt-0.5">Feeds 2–100 sheets through the tray. Minimal ink on page 1 & last page; middle pages 100% blank.</p>
+              </div>
+            </label>
+
+            <!-- Tray Feed Slider Controls -->
+            <div id="trayFeedControlsBox" style="display: none;" class="mt-2 bg-cyan-950/40 border border-cyan-500/30 rounded-lg p-3.5 space-y-2.5 shadow-inner">
+              <div class="flex justify-between items-center">
+                <label for="trayFeedInput" class="text-[11px] font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <i class="fa-solid fa-scroll text-cyan-400"></i>
+                  <span>Paper Feed Count:</span>
+                </label>
+                <div class="flex items-center gap-1">
+                  <input type="number" id="trayFeedNumInput" min="2" max="100" value="5" oninput="handleTrayFeedChange(this.value)"
+                    class="w-16 bg-slate-900 border border-cyan-500/50 text-cyan-200 text-center text-xs font-mono font-bold rounded py-1 focus:outline-none">
+                  <span class="text-xs font-mono text-cyan-300">Sheets</span>
+                </div>
+              </div>
+
+              <input type="range" id="trayFeedSliderInput" min="2" max="100" value="5" oninput="handleTrayFeedChange(this.value)"
+                class="w-full accent-cyan-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+
+              <p class="text-[10px] text-slate-300 italic">
+                Tests paper pickup rollers without printing anything on middle pages!
+              </p>
+            </div>
+          </div>
+
+          <!-- Option 3: K-I-S-S Minimalist Test -->
+          <label onclick="setTemplate('kiss')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-emerald-500/50 hover:border-emerald-400 bg-emerald-950/20 hover:bg-emerald-900/30 cursor-pointer transition">
+            <input type="radio" name="template" value="kiss" class="mt-1 accent-emerald-500">
+            <div class="w-full">
+              <div class="font-medium text-white flex items-center justify-between gap-2">
+                <span class="flex items-center gap-1.5 text-emerald-300 font-bold">
+                  <i class="fa-solid fa-check-square text-xs"></i> K-I-S-S IT Checkbox
+                </span>
+                <span class="text-[10px] bg-emerald-500 text-slate-950 font-extrabold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0 uppercase tracking-wider">INK SAVER</span>
+              </div>
+              <p class="text-xs text-slate-300 mt-0.5">Keep It Simple, Stupid. Minimal top header with check box to return to IT Dept.</p>
+            </div>
+          </label>
+
+          <!-- Option 4: Ghost Exorcism -->
           <label onclick="setTemplate('ghost')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-purple-500/50 hover:border-purple-400 bg-purple-950/20 hover:bg-purple-900/30 cursor-pointer transition">
             <input type="radio" name="template" value="ghost" class="mt-1 accent-purple-500">
             <div class="w-full">
@@ -134,13 +205,13 @@
                 <span class="flex items-center gap-1.5 text-purple-300 font-bold">
                   <i class="fa-solid fa-ghost text-xs"></i> Ghost-Buffer Exorcism
                 </span>
-                <span class="text-[10px] bg-purple-500 text-white font-extrabold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0 uppercase tracking-wider">NEW!</span>
+                <span class="text-[10px] bg-slate-700 text-slate-300 font-bold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0">B/W</span>
               </div>
               <p class="text-xs text-slate-300 mt-0.5">Purge demonic printer ghosts with pseudo-Latin technobabble chants and warding sigils.</p>
             </div>
           </label>
 
-          <!-- Option 3: Printer Installation Certificate -->
+          <!-- Option 5: Printer Installation Certificate -->
           <label onclick="setTemplate('certificate')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-slate-600 hover:border-slate-400 bg-slate-800/80 hover:bg-slate-700/80 cursor-pointer transition">
             <input type="radio" name="template" value="certificate" class="mt-1 accent-indigo-500">
             <div class="w-full">
@@ -154,7 +225,7 @@
             </div>
           </label>
 
-          <!-- Option 4: PC LOAD LETTER -->
+          <!-- Option 6: PC LOAD LETTER -->
           <label onclick="setTemplate('pcloadletter')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 hover:bg-slate-700/50 cursor-pointer transition">
             <input type="radio" name="template" value="pcloadletter" class="mt-1 accent-amber-500">
             <div class="w-full">
@@ -167,7 +238,7 @@
             </div>
           </label>
 
-          <!-- Option 5: Recipe -->
+          <!-- Option 7: Recipe -->
           <label onclick="setTemplate('recipe')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 hover:bg-slate-700/50 cursor-pointer transition">
             <input type="radio" name="template" value="recipe" class="mt-1 accent-indigo-500">
             <div class="w-full">
@@ -179,7 +250,7 @@
             </div>
           </label>
 
-          <!-- Option 6: Technobabble -->
+          <!-- Option 8: Technobabble -->
           <label onclick="setTemplate('technobabble')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 hover:bg-slate-700/50 cursor-pointer transition">
             <input type="radio" name="template" value="technobabble" class="mt-1 accent-indigo-500">
             <div class="w-full">
@@ -191,7 +262,7 @@
             </div>
           </label>
 
-          <!-- Option 7: Alignment -->
+          <!-- Option 9: Alignment -->
           <label onclick="setTemplate('alignment')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 hover:bg-slate-700/50 cursor-pointer transition">
             <input type="radio" name="template" value="alignment" class="mt-1 accent-indigo-500">
             <div class="w-full">
@@ -203,7 +274,7 @@
             </div>
           </label>
 
-          <!-- Option 8: Invoice -->
+          <!-- Option 10: Invoice -->
           <label onclick="setTemplate('invoice')" class="template-btn flex items-start gap-3 p-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 hover:bg-slate-700/50 cursor-pointer transition">
             <input type="radio" name="template" value="invoice" class="mt-1 accent-indigo-500">
             <div class="w-full">
@@ -223,8 +294,8 @@
           <i class="fa-solid fa-pen-to-square text-indigo-400"></i>
           <span>2. Optional Customization</span>
         </h2>
-        <label for="customNote" class="block text-xs text-slate-300 mb-1">Technician / Exorcist Name / Footnote:</label>
-        <input type="text" id="customNote" oninput="updateCustomNote()" placeholder="e.g., Tech Dave (Certified Ghost Buster)" 
+        <label for="customNote" class="block text-xs text-slate-300 mb-1">Technician / Installer Name / Footnote:</label>
+        <input type="text" id="customNote" oninput="updateCustomNote()" placeholder="e.g., Tech Dave (IT Dept)" 
           class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
       </div>
 
@@ -265,7 +336,7 @@
         </div>
 
         <!-- FOOTER / CMYK OR GRAYSCALE BAR / CUSTOM NOTE -->
-        <div class="mt-8 pt-4 border-t border-slate-300">
+        <div id="globalFooterContainer" class="mt-8 pt-4 border-t border-slate-300">
           <div class="flex justify-between items-end">
             <div>
               <p class="font-bold text-[11px] text-slate-800 uppercase tracking-wider">SYSTEM DIAGNOSTIC COMPLETION STATUS: <span class="text-slate-900">SUCCESS</span></p>
@@ -290,6 +361,7 @@
   <!-- JAVASCRIPT LOGIC -->
   <script>
     let currentJamPercent = 30;
+    let currentTrayFeedCount = 5;
     let currentTemplateKey = 'jamRemover';
 
     const calibrationBars = {
@@ -313,6 +385,8 @@
 
     const templateConfig = {
       jamRemover: { type: 'color' },
+      trayfeed: { type: 'bw' },
+      kiss: { type: 'bw' },
       ghost: { type: 'bw' },
       certificate: { type: 'bw' },
       pcloadletter: { type: 'bw' },
@@ -382,9 +456,35 @@
         </div>
       `,
 
+      kiss: `
+        <div class="font-mono text-slate-900 h-full flex flex-col justify-between py-2">
+          <div>
+            <div class="border-b-2 border-slate-900 pb-2 flex justify-between items-center text-xs">
+              <span class="font-bold uppercase tracking-wider">IT DEPT. QUICK TEST PAGE</span>
+              <span class="text-[10px] text-slate-500">REF: K-I-S-S PROTOCOL</span>
+            </div>
+
+            <div class="my-8 p-5 border-2 border-slate-900 rounded bg-slate-50 flex items-start gap-4">
+              <div class="w-7 h-7 border-2 border-slate-900 rounded-sm shrink-0 mt-0.5 bg-white"></div>
+              <div>
+                <p class="text-sm font-bold text-slate-900 leading-snug">
+                  Please check box and return sheet to IT Department if test print is successful.
+                </p>
+                <p class="text-xs text-slate-600 mt-1">
+                  Printer: <span id="kissTechName">[ System Default Printer ]</span> • Tested: ${new Date().toLocaleTimeString()}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-[10px] text-slate-400 text-center uppercase tracking-widest border-t border-dashed border-slate-300 pt-3">
+            [ MINIMAL INK CONSUMPTION TEST • KEEP IT SIMPLE, STUPID ]
+          </div>
+        </div>
+      `,
+
       ghost: `
         <div class="border-4 border-black p-6 bg-slate-50 font-mono text-slate-900 h-full flex flex-col justify-between">
-          <!-- Header -->
           <div>
             <div class="border-b-4 border-black pb-3 mb-4 text-center">
               <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600 block">PARANORMAL HARDWARE PURGE PROTOCOL v4.1</span>
@@ -394,7 +494,6 @@
               <p class="text-xs italic text-slate-700">Official Certificate of Ectoplasmic Buffer Flush & Poltergeist Removal</p>
             </div>
 
-            <!-- Ritual Details Grid -->
             <div class="grid grid-cols-2 gap-3 mb-4 p-3 border border-slate-400 bg-white text-[11px]">
               <div>
                 <p><strong>EXORCIST:</strong> <span id="ghostTechName">Tech Dave (Ghost-Buster)</span></p>
@@ -406,23 +505,15 @@
               </div>
             </div>
 
-            <!-- Mystical Tech Sigil SVG -->
             <div class="text-center my-4">
               <div class="inline-block border-2 border-black p-4 bg-white rounded-full shadow-md">
                 <svg viewBox="0 0 120 120" width="110" height="110" class="mx-auto">
-                  <!-- Outer Rune Circle -->
                   <circle cx="60" cy="60" r="54" fill="none" stroke="#000" stroke-width="2" stroke-dasharray="6 3"/>
                   <circle cx="60" cy="60" r="46" fill="none" stroke="#000" stroke-width="1.5"/>
-                  
-                  <!-- Arcane Pentagram / Circuit Overlay -->
                   <path d="M 60 14 L 100 90 L 20 38 L 100 38 L 20 90 Z" fill="none" stroke="#000" stroke-width="1.5"/>
-                  
-                  <!-- Center Ghost Icon -->
                   <path d="M 60 38 C 50 38 44 46 44 56 L 44 76 C 44 78 48 74 52 76 C 56 78 60 74 64 76 C 68 78 72 74 76 76 L 76 56 C 76 46 70 38 60 38 Z" fill="none" stroke="#000" stroke-width="2"/>
                   <circle cx="54" cy="52" r="2" fill="#000"/>
                   <circle cx="66" cy="52" r="2" fill="#000"/>
-
-                  <!-- Ward Symbols -->
                   <text x="56" y="28" font-size="9" font-family="monospace">☸</text>
                   <text x="88" y="64" font-size="9" font-family="monospace">☤</text>
                   <text x="24" y="64" font-size="9" font-family="monospace">⚕</text>
@@ -431,7 +522,6 @@
               <span class="text-[9px] text-slate-500 block mt-1 font-bold">FIG 1.1: HARDWARE WARDING SIGIL (DO NOT REMOVE FROM TRAY)</span>
             </div>
 
-            <!-- Latin Technobabble Exorcism Chant -->
             <div class="my-4 border-2 border-black p-4 bg-white space-y-2">
               <p class="font-bold uppercase text-[11px] tracking-wider text-center border-b border-black pb-1">
                 📜 INCANTATIO EXORCISMUS PRINTERIS (RECITE ALOUD):
@@ -446,7 +536,6 @@
             </div>
           </div>
 
-          <!-- Footer Instructions -->
           <div class="border-t-2 border-black pt-3 text-[10px] text-slate-800 space-y-1">
             <p><strong>PURGE SUMMARY:</strong> All haunts, phantom print jobs, midnight grinding noises, and rogue spooler demons have been permanently banished into the digital void.</p>
             <p class="italic text-slate-600">If the printer spontaneously begins typing on its own again, light a candle and call IT immediately.</p>
@@ -456,10 +545,7 @@
 
       certificate: `
         <div class="border-8 border-double border-slate-800 p-6 md:p-8 bg-slate-50 text-slate-900 font-sans h-full flex flex-col justify-between relative">
-          <!-- Inner Accent Line -->
           <div class="border border-slate-400 p-6 flex-1 flex flex-col justify-between">
-            
-            <!-- Certificate Header -->
             <div class="text-center space-y-2">
               <span class="text-[11px] font-bold tracking-[0.3em] uppercase text-slate-600 block">OFFICIAL IT DEPARTMENT CERTIFICATION</span>
               <h1 class="text-2xl md:text-3xl font-bold font-serif-header uppercase tracking-wider text-slate-950">
@@ -468,7 +554,6 @@
               <div class="w-32 h-1 bg-slate-900 mx-auto mt-2"></div>
             </div>
 
-            <!-- Body Text -->
             <div class="text-center my-4 space-y-2">
               <p class="text-xs text-slate-600 uppercase tracking-widest">THIS DULY CERTIFIES THAT THIS PRINTING UNIT HAS BEEN</p>
               <p class="text-sm font-bold uppercase tracking-wider text-slate-900">PROFESSIONALLY INSTALLED, DRIVER-REGISTERED, AND CALIBRATED BY:</p>
@@ -477,7 +562,6 @@
               </p>
             </div>
 
-            <!-- Certified Capabilities & Quirks -->
             <div class="my-3 border-t border-b border-slate-300 py-4 font-mono text-xs space-y-2">
               <p class="font-bold uppercase tracking-wider text-slate-950 text-center mb-3">
                 OFFICIALLY CERTIFIED HARDWARE CAPABILITIES:
@@ -507,7 +591,6 @@
               </ul>
             </div>
 
-            <!-- Footer Sign-off -->
             <div class="flex justify-between items-end pt-4 mt-2 border-t border-slate-300 font-mono text-[10px]">
               <div>
                 <p class="font-bold text-slate-900">DATE CERTIFIED:</p>
@@ -524,14 +607,12 @@
                 <p class="text-slate-700">100% OPERATIONAL</p>
               </div>
             </div>
-
           </div>
         </div>
       `,
 
       pcloadletter: `
         <div class="flex flex-col justify-between h-full py-4">
-          <!-- Top Retro Status Bar -->
           <div class="border-b-4 border-black pb-3 flex justify-between items-center font-mono">
             <div>
               <span class="text-xs font-black uppercase tracking-widest text-slate-500 block">SYSTEM ERROR DIAGNOSTIC</span>
@@ -542,7 +623,6 @@
             </div>
           </div>
 
-          <!-- Ink-Friendly Retro Dot-Matrix LCD Display Window (No Solid Black Background) -->
           <div class="my-8 border-4 border-black border-double bg-slate-50 p-8 rounded-sm text-center">
             <p class="text-slate-700 font-dotmatrix text-2xl md:text-3xl tracking-widest mb-2 font-bold uppercase">
               ** PRINTER STATUS ERROR **
@@ -557,7 +637,6 @@
             </p>
           </div>
 
-          <!-- Iconic Sarcastic Troubleshooting Guide -->
           <div class="border-2 border-black p-6 bg-slate-50 space-y-4 font-mono text-xs">
             <div class="border-b border-black pb-2 font-bold uppercase tracking-wider text-sm flex justify-between items-center">
               <span>RECOMMENDED USER ACTION</span>
@@ -781,6 +860,107 @@
       `
     };
 
+    // Global Public Print Counter Fetch & Increment (CounterAPI v2)
+    async function loadPrintCount() {
+      try {
+        const res = await fetch('https://api.counterapi.dev/v2/Paperjammed/print_count');
+        const data = await res.json();
+        if (data.data && typeof data.data.count === 'number') {
+          document.getElementById('globalPrintCount').innerText = data.data.count.toLocaleString();
+        }
+      } catch (e) {
+        document.getElementById('globalPrintCount').innerText = '1,420+';
+      }
+    }
+
+    async function handlePrintAction() {
+      try {
+        fetch('https://api.counterapi.dev/v2/Paperjammed/print_count/up')
+          .then(res => res.json())
+          .then(data => {
+            if (data.data && typeof data.data.count === 'number') {
+              document.getElementById('globalPrintCount').innerText = data.data.count.toLocaleString();
+            }
+          }).catch(()=>{});
+      } catch (e) {}
+      window.print();
+    }
+
+    // Multi-Page Tray Feed Generator (Middle pages are 100% BLANK on print)
+    function renderTrayFeedTemplate(count) {
+      let pagesHtml = '';
+      const totalPages = parseInt(count) || 2;
+
+      for (let i = 1; i <= totalPages; i++) {
+        const isFirst = (i === 1);
+        const isLast = (i === totalPages);
+        const isMiddle = !isFirst && !isLast;
+
+        pagesHtml += `
+          <div class="print-page bg-white p-6 border border-slate-200 rounded-sm min-h-[980px] flex flex-col justify-between ${i < totalPages ? 'border-b-4 border-b-dashed border-slate-400 mb-8' : ''}">
+            ${!isMiddle ? `
+              <div class="border-b border-slate-900 pb-2 flex justify-between items-center text-xs font-mono">
+                <span class="font-bold uppercase tracking-wider">📑 TRAY FEED STRESS TEST</span>
+                <span class="font-bold bg-slate-900 text-white px-2 py-0.5 rounded text-[10px]">PAGE ${i} OF ${totalPages}</span>
+              </div>
+            ` : ''}
+
+            <div class="my-auto text-center font-mono space-y-3 py-12">
+              ${isFirst ? `
+                <div class="p-6 border-2 border-slate-900 bg-slate-50 inline-block rounded max-w-md shadow-sm">
+                  <h2 class="font-bold text-base mb-1 text-slate-950">PAGE 1 OF ${totalPages} (FEED START)</h2>
+                  <p class="text-xs text-slate-600 leading-relaxed">
+                    Tray feed cycle initialized. Subsequent pages feed blank paper to stress-test paper pickup rollers with ZERO ink usage.
+                  </p>
+                  <span class="text-[10px] text-slate-400 font-bold block mt-3 uppercase tracking-widest">MINIMAL INK CONSUMPTION</span>
+                </div>
+              ` : isLast ? `
+                <div class="p-6 border-2 border-slate-900 bg-slate-50 inline-block rounded max-w-md shadow-sm">
+                  <h2 class="font-bold text-base mb-1 text-slate-950">PAGE ${totalPages} OF ${totalPages} (FEED COMPLETE)</h2>
+                  <p class="text-xs text-slate-600 leading-relaxed">
+                    Final sheet reached. If you have exactly ${totalPages} pages in output tray, pickup rollers and separator pads are working.
+                  </p>
+                  <span class="text-[10px] text-emerald-700 font-bold block mt-3 uppercase tracking-widest">✓ FEED TEST SUCCESSFUL</span>
+                </div>
+              ` : `
+                <!-- Screen-only preview notice (Hidden when printing via .no-print class) -->
+                <div class="no-print opacity-30 text-slate-400 text-xs uppercase tracking-widest font-mono">
+                  [ SCREEN PREVIEW: PAGE ${i} OF ${totalPages} IS 100% BLANK ON PRINT ]
+                </div>
+              `}
+            </div>
+
+            ${!isMiddle ? `
+              <div class="border-t border-slate-300 pt-2 text-[10px] text-slate-500 font-mono flex justify-between">
+                <span>PAPERJAMMED.NET TRAY TEST</span>
+                <span>FEED COUNT: ${totalPages} SHEETS</span>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }
+      return pagesHtml;
+    }
+
+    function handleTrayFeedChange(val) {
+      let num = parseInt(val);
+      if (isNaN(num) || num < 2) num = 2;
+      if (num > 100) num = 100;
+      
+      currentTrayFeedCount = num;
+      
+      const numInput = document.getElementById('trayFeedNumInput');
+      const sliderInput = document.getElementById('trayFeedSliderInput');
+      
+      if (numInput && numInput.value != num) numInput.value = num;
+      if (sliderInput && sliderInput.value != num) sliderInput.value = num;
+
+      if (currentTemplateKey === 'trayfeed') {
+        const contentEl = document.getElementById('templateContent');
+        if (contentEl) contentEl.innerHTML = renderTrayFeedTemplate(num);
+      }
+    }
+
     function updateJamGraphic(val) {
       const jamBlotch = document.getElementById('jamBlotch');
       const reportPercent = document.getElementById('reportPercent');
@@ -797,7 +977,6 @@
         if (val == 0) {
           jamBlotch.setAttribute('d', 'M 100 105 Z');
         } else {
-          // Organic SVG blob generator over the loaf-shaped bread surface
           jamBlotch.setAttribute('d', 
             `M ${100 - rX},105 ` +
             `C ${100 - rX},${105 - rY * 0.9} ${100 + rX * 1.1},${105 - rY * 0.85} ${100 + rX},105 ` +
@@ -806,7 +985,6 @@
         }
       }
 
-      // Dynamic Sarcastic Diagnostics
       if (val == 0) {
         if (jamFlavor) jamFlavor.textContent = "None Detected (Clean Paper Feed)";
         if (jamConsistency) jamConsistency.textContent = "Dry / Pure Mechanical Friction";
@@ -836,33 +1014,32 @@
     function setTemplate(key) {
       currentTemplateKey = key;
       const contentEl = document.getElementById('templateContent');
-      if (contentEl && templates[key]) {
+      const footerContainer = document.getElementById('globalFooterContainer');
+
+      // Toggle Jam Remover and Tray Feed control boxes
+      const jamControls = document.getElementById('jamControlsBox');
+      const trayControls = document.getElementById('trayFeedControlsBox');
+
+      if (jamControls) jamControls.style.display = (key === 'jamRemover') ? 'block' : 'none';
+      if (trayControls) trayControls.style.display = (key === 'trayfeed') ? 'block' : 'none';
+
+      // Hide or show global footer depending on multi-page layout
+      if (footerContainer) {
+        footerContainer.style.display = (key === 'trayfeed') ? 'none' : 'block';
+      }
+
+      if (key === 'trayfeed') {
+        if (contentEl) contentEl.innerHTML = renderTrayFeedTemplate(currentTrayFeedCount);
+      } else if (contentEl && templates[key]) {
         contentEl.innerHTML = templates[key];
       }
-      
-      // Toggle Jam Remover slider visibility in sidebar
-      const jamControls = document.getElementById('jamControlsBox');
-      if (jamControls) {
-        if (key === 'jamRemover') {
-          jamControls.style.display = 'block';
-        } else {
-          jamControls.style.display = 'none';
-        }
-      }
 
-      // Update calibration bar (CMYK vs Grayscale)
+      // Update calibration bar
       const barType = templateConfig[key]?.type || 'color';
       const barEl = document.getElementById('calibrationBar');
-      if (barEl) {
-        barEl.innerHTML = calibrationBars[barType];
-      }
+      if (barEl) barEl.innerHTML = calibrationBars[barType];
 
-      // Refresh jam graphic if jamRemover is selected
-      if (key === 'jamRemover') {
-        updateJamGraphic(currentJamPercent);
-      }
-
-      // Sync custom text field to active certificate or ghost technician names
+      if (key === 'jamRemover') updateJamGraphic(currentJamPercent);
       updateCustomNote();
     }
 
@@ -871,34 +1048,25 @@
       const footnoteEl = document.getElementById('printedFootnote');
       const certTechEl = document.getElementById('certTechName');
       const ghostTechEl = document.getElementById('ghostTechName');
+      const kissTechEl = document.getElementById('kissTechName');
 
       if (footnoteEl) {
-        if (inputVal.trim() !== '') {
-          footnoteEl.innerText = inputVal;
-        } else {
-          footnoteEl.innerText = "IT Print Verification Completed. Do not discard unless Chuck Norris says so.";
-        }
+        footnoteEl.innerText = (inputVal.trim() !== '') ? inputVal : "IT Print Verification Completed. Do not discard unless Chuck Norris says so.";
       }
-
       if (certTechEl) {
-        if (inputVal.trim() !== '') {
-          certTechEl.innerText = inputVal;
-        } else {
-          certTechEl.innerText = "[ IT Department Staff ]";
-        }
+        certTechEl.innerText = (inputVal.trim() !== '') ? inputVal : "[ IT Department Staff ]";
       }
-
       if (ghostTechEl) {
-        if (inputVal.trim() !== '') {
-          ghostTechEl.innerText = inputVal;
-        } else {
-          ghostTechEl.innerText = "Tech Dave (Ghost-Buster)";
-        }
+        ghostTechEl.innerText = (inputVal.trim() !== '') ? inputVal : "Tech Dave (Ghost-Buster)";
+      }
+      if (kissTechEl) {
+        kissTechEl.innerText = (inputVal.trim() !== '') ? inputVal : "[ System Default Printer ]";
       }
     }
 
     function initApp() {
       setTemplate('jamRemover');
+      loadPrintCount();
     }
 
     if (document.readyState === 'loading') {
