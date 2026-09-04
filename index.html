@@ -73,7 +73,7 @@
         <div>
           <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
             PaperJammed<span class="text-rose-400">.net</span>
-            <span class="text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full font-mono uppercase">v1.8</span>
+            <span class="text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full font-mono uppercase">v2.0</span>
           </h1>
           <p class="text-xs text-slate-400">The IT-approved printer setup tool that leaves a smile.</p>
         </div>
@@ -363,6 +363,11 @@
     let currentJamPercent = 30;
     let currentTrayFeedCount = 5;
     let currentTemplateKey = 'jamRemover';
+
+    // Official CounterAPI V2 Configuration
+    const COUNTER_NAMESPACE = 'paperjammed_net';
+    const COUNTER_NAME = 'print_count';
+    const COUNTER_API_V2_BASE = `https://api.counterapi.dev/v2/${COUNTER_NAMESPACE}/${COUNTER_NAME}`;
 
     const calibrationBars = {
       color: `
@@ -862,7 +867,7 @@
 
     // Helper function for short timeout on network fetches
     async function fetchWithTimeout(resource, options = {}) {
-      const { timeout = 2000 } = options;
+      const { timeout = 2500 } = options;
       const controller = new AbortController();
       const id = setTimeout(() => controller.abort(), timeout);
       try {
@@ -879,40 +884,67 @@
     }
 
     function getLocalCount() {
-      return parseInt(localStorage.getItem('pj_print_count') || '0', 10);
+      const raw = localStorage.getItem('pj_print_count');
+      const parsed = parseInt(raw || '0', 10);
+      return isNaN(parsed) ? 0 : parsed;
     }
 
     function setLocalCount(val) {
-      localStorage.setItem('pj_print_count', val);
+      const num = parseInt(val, 10) || 0;
+      localStorage.setItem('pj_print_count', num);
       const el = document.getElementById('globalPrintCount');
-      if (el) el.innerText = val.toLocaleString();
+      if (el) el.innerText = num.toLocaleString();
     }
 
-    // Global Public Print Counter Fetch & Increment
+    function extractCountFromResponse(data) {
+      if (!data) return 0;
+      const val = data.value ?? data.count ?? data.up_count ?? data.data?.value ?? 0;
+      return parseInt(val, 10) || 0;
+    }
+
+    // Global Public Print Counter Fetch & Sync via CounterAPI V2
     async function loadPrintCount() {
+      const localVal = getLocalCount();
       const el = document.getElementById('globalPrintCount');
-      if (el) el.innerText = getLocalCount().toLocaleString();
+      if (el) el.innerText = localVal.toLocaleString();
 
       try {
-        const res = await fetchWithTimeout('https://api.counterapi.dev/v2/Paperjammed/print_count', { timeout: 2000 });
-        const data = await res.json();
-        if (data.data && typeof data.data.count === 'number') {
-          setLocalCount(data.data.count);
+        const res = await fetchWithTimeout(COUNTER_API_V2_BASE);
+        if (res.ok) {
+          const data = await res.json();
+          const serverVal = extractCountFromResponse(data);
+          if (serverVal > 0) {
+            setLocalCount(Math.max(serverVal, localVal));
+            return;
+          }
         }
       } catch (e) {
-        setLocalCount(getLocalCount());
+        console.warn('Unable to sync counter from CounterAPI V2; using cached local count.', e);
       }
     }
 
     async function handlePrintAction() {
-      const nextVal = getLocalCount() + 1;
+      // 1. Optimistically increment UI and local state for instant responsiveness
+      const currentVal = getLocalCount();
+      const nextVal = currentVal + 1;
       setLocalCount(nextVal);
 
-      try {
-        fetch('https://api.counterapi.dev/v2/Paperjammed/print_count/up').catch(() => {});
-      } catch (e) {}
-
+      // 2. Trigger browser print window
       window.print();
+
+      // 3. Persist increment to CounterAPI V2 (/up)
+      try {
+        const res = await fetch(`${COUNTER_API_V2_BASE}/up`);
+        if (res.ok) {
+          const data = await res.json();
+          const updatedVal = extractCountFromResponse(data);
+          if (updatedVal >= nextVal) {
+            setLocalCount(updatedVal);
+          }
+        }
+      } catch (e) {
+        console.warn('Print hit count failed to register to CounterAPI V2.', e);
+      }
     }
 
     // Multi-Page Tray Feed Generator (Middle pages are 100% BLANK on print)
