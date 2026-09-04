@@ -83,7 +83,7 @@
         <!-- Live Global Print Counter Badge -->
         <span class="text-xs bg-slate-900/80 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg font-mono flex items-center gap-2 shadow-inner">
           <i class="fa-solid fa-fire text-amber-400 text-sm"></i>
-          <span><strong id="globalPrintCount">...</strong> Pages Printed</span>
+          <span><strong id="globalPrintCount">0</strong> Pages Printed</span>
         </span>
 
         <button onclick="handlePrintAction()" class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-2.5 rounded-lg shadow-lg flex items-center justify-center gap-2 transition duration-200 cursor-pointer">
@@ -860,29 +860,58 @@
       `
     };
 
-    // Global Public Print Counter Fetch & Increment (CounterAPI v2)
-    async function loadPrintCount() {
+    // Helper function for short timeout on network fetches
+    async function fetchWithTimeout(resource, options = {}) {
+      const { timeout = 2000 } = options;
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeout);
       try {
-        const res = await fetch('https://api.counterapi.dev/v2/Paperjammed/print_count');
+        const response = await fetch(resource, {
+          ...options,
+          signal: controller.signal
+        });
+        clearTimeout(id);
+        return response;
+      } catch (err) {
+        clearTimeout(id);
+        throw err;
+      }
+    }
+
+    function getLocalCount() {
+      return parseInt(localStorage.getItem('pj_print_count') || '0', 10);
+    }
+
+    function setLocalCount(val) {
+      localStorage.setItem('pj_print_count', val);
+      const el = document.getElementById('globalPrintCount');
+      if (el) el.innerText = val.toLocaleString();
+    }
+
+    // Global Public Print Counter Fetch & Increment
+    async function loadPrintCount() {
+      const el = document.getElementById('globalPrintCount');
+      if (el) el.innerText = getLocalCount().toLocaleString();
+
+      try {
+        const res = await fetchWithTimeout('https://api.counterapi.dev/v2/Paperjammed/print_count', { timeout: 2000 });
         const data = await res.json();
         if (data.data && typeof data.data.count === 'number') {
-          document.getElementById('globalPrintCount').innerText = data.data.count.toLocaleString();
+          setLocalCount(data.data.count);
         }
       } catch (e) {
-        document.getElementById('globalPrintCount').innerText = '1,420+';
+        setLocalCount(getLocalCount());
       }
     }
 
     async function handlePrintAction() {
+      const nextVal = getLocalCount() + 1;
+      setLocalCount(nextVal);
+
       try {
-        fetch('https://api.counterapi.dev/v2/Paperjammed/print_count/up')
-          .then(res => res.json())
-          .then(data => {
-            if (data.data && typeof data.data.count === 'number') {
-              document.getElementById('globalPrintCount').innerText = data.data.count.toLocaleString();
-            }
-          }).catch(()=>{});
+        fetch('https://api.counterapi.dev/v2/Paperjammed/print_count/up').catch(() => {});
       } catch (e) {}
+
       window.print();
     }
 
@@ -1016,14 +1045,12 @@
       const contentEl = document.getElementById('templateContent');
       const footerContainer = document.getElementById('globalFooterContainer');
 
-      // Toggle Jam Remover and Tray Feed control boxes
       const jamControls = document.getElementById('jamControlsBox');
       const trayControls = document.getElementById('trayFeedControlsBox');
 
       if (jamControls) jamControls.style.display = (key === 'jamRemover') ? 'block' : 'none';
       if (trayControls) trayControls.style.display = (key === 'trayfeed') ? 'block' : 'none';
 
-      // Hide or show global footer depending on multi-page layout
       if (footerContainer) {
         footerContainer.style.display = (key === 'trayfeed') ? 'none' : 'block';
       }
@@ -1034,7 +1061,6 @@
         contentEl.innerHTML = templates[key];
       }
 
-      // Update calibration bar
       const barType = templateConfig[key]?.type || 'color';
       const barEl = document.getElementById('calibrationBar');
       if (barEl) barEl.innerHTML = calibrationBars[barType];
