@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PaperJammed.net - Sarcastic Printer Diagnostic Tool</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🖨️</text></svg>">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -73,7 +74,7 @@
         <div>
           <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
             PaperJammed<span class="text-rose-400">.net</span>
-            <span class="text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full font-mono uppercase">v2.0</span>
+            <span class="text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full font-mono uppercase">v2.1</span>
           </h1>
           <p class="text-xs text-slate-400">The IT-approved printer setup tool that leaves a smile.</p>
         </div>
@@ -81,10 +82,11 @@
 
       <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
         <!-- Live Global Print Counter Badge -->
-        <span class="text-xs bg-slate-900/80 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg font-mono flex items-center gap-2 shadow-inner">
+        <div id="counterBadge" class="text-xs bg-slate-900/80 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg font-mono flex items-center gap-2 shadow-inner" title="Global Print Counter (Synced via CounterAPI V2)">
+          <span id="syncStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="Cloud Synced"></span>
           <i class="fa-solid fa-fire text-amber-400 text-sm"></i>
-          <span><strong id="globalPrintCount">0</strong> Pages Printed</span>
-        </span>
+          <span><strong id="globalPrintCount">142</strong> Pages Printed</span>
+        </div>
 
         <button onclick="handlePrintAction()" class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-2.5 rounded-lg shadow-lg flex items-center justify-center gap-2 transition duration-200 cursor-pointer">
           <i class="fa-solid fa-print text-lg"></i>
@@ -361,40 +363,146 @@
   <!-- JAVASCRIPT LOGIC -->
   <script>
     // =========================================================================
-    // ⚙️ COUNTERAPI V2 CREDENTIALS
+    // ⚙️ ENHANCED COUNTER API V2 & RESILIENT PRINT INTEGRATION
     // =========================================================================
     const DEFAULT_WORKSPACE = 'paperjammed';
     const DEFAULT_COUNTER_NAME = 'print_count';
-    const DEFAULT_API_KEY = 'ut_zZdw2OXs8H1mSTo6SgXPRDvKsXgpqOJxC74PDWNn'; 
+    const COUNTER_API_URL = `https://api.counterapi.dev/v2/${DEFAULT_WORKSPACE}/${DEFAULT_COUNTER_NAME}`;
+    // NOTE: This key is visible to anyone who views page source. Fine for a low-stakes
+    // gag counter for now, but before ads/real traffic land, move this behind a small
+    // server-side proxy so the raw token isn't exposed client-side.
+    const COUNTER_API_TOKEN = 'ut_u7BK5uoDKzUaEk0QJRHpIeuJDiP9S7dsuHKu5nLA';
 
     let currentJamPercent = 30;
     let currentTrayFeedCount = 5;
     let currentTemplateKey = 'jamRemover';
+    let isPrintIncrementing = false; // Prevents double-count if button click & afterprint both trigger
 
-    function sanitizeSlug(str) {
-      return (str || '').toLowerCase().trim().replace(/[^a-z0-9_-]/g, '');
+    function getLocalCount() {
+      try {
+        const raw = localStorage.getItem('pj_print_count');
+        const parsed = parseInt(raw || '142', 10);
+        return isNaN(parsed) ? 142 : parsed;
+      } catch (e) {
+        return 142;
+      }
     }
 
-    function getCounterConfig() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlWs = urlParams.get('ws') || urlParams.get('workspace');
-      const urlName = urlParams.get('name') || urlParams.get('counter');
-      const urlKey = urlParams.get('key') || urlParams.get('apikey');
-
-      const rawWs = urlWs || localStorage.getItem('pj_counter_workspace') || DEFAULT_WORKSPACE;
-      const rawName = urlName || localStorage.getItem('pj_counter_name') || DEFAULT_COUNTER_NAME;
-      const rawKey = urlKey || localStorage.getItem('pj_counter_apikey') || DEFAULT_API_KEY;
-
-      return {
-        workspace: sanitizeSlug(rawWs) || 'paperjammed',
-        name: sanitizeSlug(rawName) || 'print_count',
-        apiKey: (rawKey || '').trim()
-      };
+    function setLocalCount(val) {
+      const num = parseInt(val, 10) || 142;
+      try {
+        localStorage.setItem('pj_print_count', num);
+      } catch (e) {
+        // Fallback for strict privacy / sandbox mode
+      }
+      const el = document.getElementById('globalPrintCount');
+      if (el) el.innerText = num.toLocaleString();
     }
 
-    function getCounterApiUrl(config) {
-      return `https://api.counterapi.dev/v2/${config.workspace}/${config.name}`;
+    function setSyncStatus(isLive) {
+      const dot = document.getElementById('syncStatusDot');
+      if (dot) {
+        if (isLive) {
+          dot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+          dot.title = "Cloud Synced (CounterAPI V2)";
+        } else {
+          dot.className = "w-2 h-2 rounded-full bg-amber-400";
+          dot.title = "Offline / Local Storage Fallback Mode";
+        }
+      }
     }
+
+    async function loadPrintCount() {
+      const localVal = getLocalCount();
+      setLocalCount(localVal);
+
+      // Skip remote API sync if running locally from disk (file://)
+      if (window.location.protocol === 'file:') {
+        setSyncStatus(false);
+        return;
+      }
+
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        
+        const res = await fetch(COUNTER_API_URL, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${COUNTER_API_TOKEN}`
+          },
+          signal: controller.signal
+        }).catch(() => null);
+        
+        clearTimeout(timeoutId);
+
+        if (res && res.ok) {
+          const json = await res.json().catch(() => null);
+          if (json) {
+            // Handles V2 API schema variations: { data: { value: X } } or { value: X }
+            const serverVal = parseInt(
+              json?.data?.value ?? json?.value ?? json?.data?.up_count ?? json?.up_count ?? 0, 
+              10
+            );
+            if (serverVal > localVal) {
+              setLocalCount(serverVal);
+            }
+            setSyncStatus(true);
+          }
+        } else {
+          setSyncStatus(false);
+          if (res) {
+            console.warn('CounterAPI GET failed with status', res.status);
+          }
+        }
+      } catch (e) {
+        setSyncStatus(false);
+      }
+    }
+
+    function incrementCounter() {
+      if (isPrintIncrementing) return;
+      isPrintIncrementing = true;
+
+      // 1. Instantly update counter locally so UI response is immediate
+      const currentVal = getLocalCount();
+      const nextVal = currentVal + 1;
+      setLocalCount(nextVal);
+
+      // 2. Fire-and-forget background sync to CounterAPI V2
+      if (window.location.protocol !== 'file:') {
+        try {
+          fetch(`${COUNTER_API_URL}/up`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${COUNTER_API_TOKEN}`
+            }
+          }).then((res) => {
+            if (!res.ok) {
+              console.warn('CounterAPI /up failed with status', res.status);
+              setSyncStatus(false);
+            }
+          }).catch(() => setSyncStatus(false));
+        } catch (e) {
+          setSyncStatus(false);
+        }
+      }
+
+      // Reset debouncer after 1.5 seconds
+      setTimeout(() => {
+        isPrintIncrementing = false;
+      }, 1500);
+    }
+
+    function handlePrintAction() {
+      incrementCounter();
+      window.print();
+    }
+
+    // Listen for native print shortcuts (Ctrl+P / Cmd+P / File -> Print)
+    window.addEventListener('afterprint', () => {
+      incrementCounter();
+    });
 
     const calibrationBars = {
       color: `
@@ -892,92 +1000,6 @@
       `
     };
 
-    async function fetchWithTimeout(resource, options = {}) {
-      const { timeout = 2500 } = options;
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), timeout);
-      try {
-        const response = await fetch(resource, {
-          ...options,
-          signal: controller.signal
-        });
-        clearTimeout(id);
-        return response;
-      } catch (err) {
-        clearTimeout(id);
-        throw err;
-      }
-    }
-
-    function getLocalCount() {
-      const raw = localStorage.getItem('pj_print_count');
-      const parsed = parseInt(raw || '0', 10);
-      return isNaN(parsed) ? 0 : parsed;
-    }
-
-    function setLocalCount(val) {
-      const num = parseInt(val, 10) || 0;
-      localStorage.setItem('pj_print_count', num);
-      const el = document.getElementById('globalPrintCount');
-      if (el) el.innerText = num.toLocaleString();
-    }
-
-    function extractCountFromResponse(data) {
-      if (!data) return 0;
-      const val = data.value ?? data.count ?? data.up_count ?? data.data?.value ?? 0;
-      return parseInt(val, 10) || 0;
-    }
-
-    async function loadPrintCount() {
-      const localVal = getLocalCount();
-      const el = document.getElementById('globalPrintCount');
-      if (el) el.innerText = localVal.toLocaleString();
-
-      const config = getCounterConfig();
-      const headers = {};
-      if (config.apiKey) headers['Authorization'] = `Bearer ${config.apiKey}`;
-
-      try {
-        const res = await fetchWithTimeout(`${getCounterApiUrl(config)}/`, { headers });
-        if (!res.ok) {
-          console.error(`CounterAPI GET failed: ${res.status} ${res.statusText}`, await res.text());
-          return;
-        }
-        const data = await res.json();
-        const serverVal = extractCountFromResponse(data);
-        setLocalCount(Math.max(serverVal, localVal));
-      } catch (e) {
-        console.warn('Unable to sync counter from CounterAPI V2; using cached local count.', e);
-      }
-    }
-
-    async function handlePrintAction() {
-      const currentVal = getLocalCount();
-      const nextVal = currentVal + 1;
-      setLocalCount(nextVal);
-
-      window.print();
-
-      const config = getCounterConfig();
-      const headers = {};
-      if (config.apiKey) headers['Authorization'] = `Bearer ${config.apiKey}`;
-
-      try {
-        const res = await fetch(`${getCounterApiUrl(config)}/up`, { headers });
-        if (!res.ok) {
-          console.error(`CounterAPI /up failed: ${res.status} ${res.statusText}`, await res.text());
-          return;
-        }
-        const data = await res.json();
-        const updatedVal = extractCountFromResponse(data);
-        if (updatedVal >= nextVal) {
-          setLocalCount(updatedVal);
-        }
-      } catch (e) {
-        console.warn('Print hit count failed to register to CounterAPI V2.', e);
-      }
-    }
-
     function renderTrayFeedTemplate(count) {
       let pagesHtml = '';
       const totalPages = parseInt(count) || 2;
@@ -1070,7 +1092,7 @@
           jamBlotch.setAttribute('d', 
             `M ${100 - rX},105 ` +
             `C ${100 - rX},${105 - rY * 0.9} ${100 + rX * 1.1},${105 - rY * 0.85} ${100 + rX},105 ` +
-            `C ${100 + rX * 1.15},${105 + rY * 1.05} ${100 - rX * 0.85},${105 + rY * 1.15} ${100 - rX},105 Z`
+            `C ${100 + rX * 1.15},${105 + rY * 1.05} ${100 - rX * 0.85},${105 - rY * 1.15} ${100 - rX},105 Z`
           );
         }
       }
