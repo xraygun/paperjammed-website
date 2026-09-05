@@ -360,14 +360,41 @@
 
   <!-- JAVASCRIPT LOGIC -->
   <script>
+    // =========================================================================
+    // ⚙️ COUNTERAPI V2 CREDENTIALS
+    // =========================================================================
+    const DEFAULT_WORKSPACE = 'paperjammed';
+    const DEFAULT_COUNTER_NAME = 'print_count';
+    const DEFAULT_API_KEY = 'ut_zZdw2OXs8H1mSTo6SgXPRDvKsXgpqOJxC74PDWNn'; 
+
     let currentJamPercent = 30;
     let currentTrayFeedCount = 5;
     let currentTemplateKey = 'jamRemover';
 
-    // Official CounterAPI V2 Configuration
-    const COUNTER_NAMESPACE = 'paperjammed_net';
-    const COUNTER_NAME = 'print_count';
-    const COUNTER_API_V2_BASE = `https://api.counterapi.dev/v2/${COUNTER_NAMESPACE}/${COUNTER_NAME}`;
+    function sanitizeSlug(str) {
+      return (str || '').toLowerCase().trim().replace(/[^a-z0-9_-]/g, '');
+    }
+
+    function getCounterConfig() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlWs = urlParams.get('ws') || urlParams.get('workspace');
+      const urlName = urlParams.get('name') || urlParams.get('counter');
+      const urlKey = urlParams.get('key') || urlParams.get('apikey');
+
+      const rawWs = urlWs || localStorage.getItem('pj_counter_workspace') || DEFAULT_WORKSPACE;
+      const rawName = urlName || localStorage.getItem('pj_counter_name') || DEFAULT_COUNTER_NAME;
+      const rawKey = urlKey || localStorage.getItem('pj_counter_apikey') || DEFAULT_API_KEY;
+
+      return {
+        workspace: sanitizeSlug(rawWs) || 'paperjammed',
+        name: sanitizeSlug(rawName) || 'print_count',
+        apiKey: (rawKey || '').trim()
+      };
+    }
+
+    function getCounterApiUrl(config) {
+      return `https://api.counterapi.dev/v2/${config.workspace}/${config.name}`;
+    }
 
     const calibrationBars = {
       color: `
@@ -865,7 +892,6 @@
       `
     };
 
-    // Helper function for short timeout on network fetches
     async function fetchWithTimeout(resource, options = {}) {
       const { timeout = 2500 } = options;
       const controller = new AbortController();
@@ -902,21 +928,21 @@
       return parseInt(val, 10) || 0;
     }
 
-    // Global Public Print Counter Fetch & Sync via CounterAPI V2
     async function loadPrintCount() {
       const localVal = getLocalCount();
       const el = document.getElementById('globalPrintCount');
       if (el) el.innerText = localVal.toLocaleString();
 
+      const config = getCounterConfig();
+      const headers = {};
+      if (config.apiKey) headers['Authorization'] = `Bearer ${config.apiKey}`;
+
       try {
-        const res = await fetchWithTimeout(COUNTER_API_V2_BASE);
+        const res = await fetchWithTimeout(getCounterApiUrl(config), { headers });
         if (res.ok) {
           const data = await res.json();
           const serverVal = extractCountFromResponse(data);
-          if (serverVal > 0) {
-            setLocalCount(Math.max(serverVal, localVal));
-            return;
-          }
+          setLocalCount(Math.max(serverVal, localVal));
         }
       } catch (e) {
         console.warn('Unable to sync counter from CounterAPI V2; using cached local count.', e);
@@ -924,17 +950,18 @@
     }
 
     async function handlePrintAction() {
-      // 1. Optimistically increment UI and local state for instant responsiveness
       const currentVal = getLocalCount();
       const nextVal = currentVal + 1;
       setLocalCount(nextVal);
 
-      // 2. Trigger browser print window
       window.print();
 
-      // 3. Persist increment to CounterAPI V2 (/up)
+      const config = getCounterConfig();
+      const headers = {};
+      if (config.apiKey) headers['Authorization'] = `Bearer ${config.apiKey}`;
+
       try {
-        const res = await fetch(`${COUNTER_API_V2_BASE}/up`);
+        const res = await fetch(`${getCounterApiUrl(config)}/up`, { headers });
         if (res.ok) {
           const data = await res.json();
           const updatedVal = extractCountFromResponse(data);
@@ -947,7 +974,6 @@
       }
     }
 
-    // Multi-Page Tray Feed Generator (Middle pages are 100% BLANK on print)
     function renderTrayFeedTemplate(count) {
       let pagesHtml = '';
       const totalPages = parseInt(count) || 2;
@@ -984,7 +1010,6 @@
                   <span class="text-[10px] text-emerald-700 font-bold block mt-3 uppercase tracking-widest">✓ FEED TEST SUCCESSFUL</span>
                 </div>
               ` : `
-                <!-- Screen-only preview notice (Hidden when printing via .no-print class) -->
                 <div class="no-print opacity-30 text-slate-400 text-xs uppercase tracking-widest font-mono">
                   [ SCREEN PREVIEW: PAGE ${i} OF ${totalPages} IS 100% BLANK ON PRINT ]
                 </div>
