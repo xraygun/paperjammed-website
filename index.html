@@ -938,12 +938,14 @@
       if (config.apiKey) headers['Authorization'] = `Bearer ${config.apiKey}`;
 
       try {
-        const res = await fetchWithTimeout(getCounterApiUrl(config), { headers });
-        if (res.ok) {
-          const data = await res.json();
-          const serverVal = extractCountFromResponse(data);
-          setLocalCount(Math.max(serverVal, localVal));
+        const res = await fetchWithTimeout(`${getCounterApiUrl(config)}/`, { headers });
+        if (!res.ok) {
+          console.error(`CounterAPI GET failed: ${res.status} ${res.statusText}`, await res.text());
+          return;
         }
+        const data = await res.json();
+        const serverVal = extractCountFromResponse(data);
+        setLocalCount(Math.max(serverVal, localVal));
       } catch (e) {
         console.warn('Unable to sync counter from CounterAPI V2; using cached local count.', e);
       }
@@ -962,12 +964,14 @@
 
       try {
         const res = await fetch(`${getCounterApiUrl(config)}/up`, { headers });
-        if (res.ok) {
-          const data = await res.json();
-          const updatedVal = extractCountFromResponse(data);
-          if (updatedVal >= nextVal) {
-            setLocalCount(updatedVal);
-          }
+        if (!res.ok) {
+          console.error(`CounterAPI /up failed: ${res.status} ${res.statusText}`, await res.text());
+          return;
+        }
+        const data = await res.json();
+        const updatedVal = extractCountFromResponse(data);
+        if (updatedVal >= nextVal) {
+          setLocalCount(updatedVal);
         }
       } catch (e) {
         console.warn('Print hit count failed to register to CounterAPI V2.', e);
