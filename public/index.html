@@ -11,60 +11,62 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=VT323&family=Cinzel:wght@700&display=swap" rel="stylesheet">
   <style>
-    /* Custom Styles for Print Formatting */
+    /* Browser print configuration: margin 0 disables native header/footer (URL, date, page numbers) */
     @page {
-      /* Setting margin to 0 removes browser headers/footers (URL, title, date, page numbers) by default */
+      size: portrait;
       margin: 0;
-      size: auto;
     }
 
     @media print {
-      html, body {
+      body {
         background: #ffffff !important;
         color: #000000 !important;
         margin: 0 !important;
         padding: 0 !important;
-        height: 100% !important;
-        overflow: hidden !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
       }
       .no-print {
         display: none !important;
       }
       .print-area {
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: space-between !important;
+        display: block !important;
         box-shadow: none !important;
         border: none !important;
         width: 100% !important;
         max-width: none !important;
+        margin: 0 !important;
+        padding: 10mm !important;
+        box-sizing: border-box !important;
         height: 100vh !important;
         max-height: 100vh !important;
-        margin: 0 !important;
-        padding: 10mm !important; /* Retain internal paper margins */
-        box-sizing: border-box !important;
+        overflow: hidden !important;
         page-break-after: avoid !important;
         break-after: avoid !important;
-        overflow: hidden !important;
+      }
+      /* Multi-page containers (Tray Feed & Certificate) break explicitly per page element */
+      .print-area.multi-page-mode {
+        padding: 0 !important;
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+        page-break-after: auto !important;
+        break-after: auto !important;
       }
       .print-page {
         page-break-after: always !important;
         break-after: page !important;
         height: 100vh !important;
         max-height: 100vh !important;
-        margin: 0 !important;
-        padding: 10mm !important;
         box-sizing: border-box !important;
-        box-shadow: none !important;
-        border: none !important;
+        padding: 10mm !important;
+        margin: 0 !important;
         overflow: hidden !important;
       }
       .print-page:last-child {
         page-break-after: avoid !important;
         break-after: avoid !important;
       }
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
     }
 
     .font-dotmatrix {
@@ -172,7 +174,7 @@
                   </span>
                   <span class="text-[10px] bg-cyan-500 text-slate-950 font-extrabold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0 uppercase tracking-wider">NEW!</span>
                 </div>
-                <p class="text-xs text-slate-300 mt-0.5">Feeds 2–100 sheets through the tray. Minimal ink on page 1 & last page; middle pages 100% blank.</p>
+                <p class="text-xs text-slate-300 mt-0.5">Feeds 2–100 sheets. Page 1 prints instructions; all subsequent pages are 100% blank.</p>
               </div>
             </label>
 
@@ -194,7 +196,7 @@
                 class="w-full accent-cyan-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
 
               <p class="text-[10px] text-slate-300 italic">
-                Tests paper pickup rollers without printing anything on middle pages!
+                Tests pickup rollers cleanly without wasting ink on subsequent pages!
               </p>
             </div>
           </div>
@@ -235,9 +237,9 @@
                 <span class="flex items-center gap-1.5 text-slate-200 font-bold">
                   <i class="fa-solid fa-award text-xs text-amber-400"></i> Installation Certificate
                 </span>
-                <span class="text-[10px] bg-slate-700 text-slate-300 font-bold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0">B/W</span>
+                <span class="text-[10px] bg-slate-700 text-slate-300 font-bold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0">2 PAGES</span>
               </div>
-              <p class="text-xs text-slate-300 mt-0.5">Grayscale certificate certifying hardware quirks & capabilities with technician signature.</p>
+              <p class="text-xs text-slate-300 mt-0.5">Official certificate of hardware quirks + 1 extra completely blank page.</p>
             </div>
           </label>
 
@@ -331,12 +333,12 @@
       
       <div class="no-print w-full flex justify-between items-center mb-3">
         <span class="text-sm text-slate-400 font-medium flex items-center gap-2">
-          <i class="fa-solid fa-eye text-slate-500"></i> Page Preview (A4 / Letter - 1 Page Fit)
+          <i class="fa-solid fa-eye text-slate-500"></i> Page Preview (A4 / Letter)
         </span>
       </div>
 
       <!-- PRINT SHEET CONTAINER -->
-      <div id="printSheet" class="print-area bg-white text-slate-900 p-6 md:p-10 shadow-2xl rounded-sm w-full max-w-[800px] min-h-[960px] flex flex-col justify-between font-mono text-xs border border-slate-200">
+      <div id="printSheet" class="print-area bg-white text-slate-900 p-6 md:p-8 shadow-2xl rounded-sm w-full max-w-[800px] min-h-[980px] flex flex-col justify-between font-mono text-xs border border-slate-200">
         
         <!-- CONTENT INJECTED DYNAMICALLY VIA JS -->
         <div id="templateContent" class="flex-1 flex flex-col justify-between">
@@ -344,7 +346,7 @@
         </div>
 
         <!-- FOOTER / CMYK OR GRAYSCALE BAR / CUSTOM NOTE -->
-        <div id="globalFooterContainer" class="mt-6 pt-3 border-t border-slate-300 shrink-0">
+        <div id="globalFooterContainer" class="mt-6 pt-3 border-t border-slate-300">
           <div class="flex justify-between items-end">
             <div>
               <p class="font-bold text-[11px] text-slate-800 uppercase tracking-wider">SYSTEM DIAGNOSTIC COMPLETION STATUS: <span class="text-slate-900">SUCCESS</span></p>
@@ -373,7 +375,7 @@
     let currentJamPercent = 30;
     let currentTrayFeedCount = 5;
     let currentTemplateKey = 'jamRemover';
-    let isPrintIncrementing = false; // Prevents double-count if button click & afterprint both trigger
+    let isPrintIncrementing = false;
 
     function getLocalCount() {
       try {
@@ -390,7 +392,7 @@
       try {
         localStorage.setItem('pj_print_count', num);
       } catch (e) {
-        // Fallback for strict sandbox mode
+        // Fallback
       }
       const el = document.getElementById('globalPrintCount');
       if (el) el.innerText = num.toLocaleString();
@@ -524,58 +526,56 @@
 
     const templates = {
       jamRemover: `
-        <div class="flex flex-col justify-between h-full">
-          <div>
-            <!-- Banner -->
-            <div class="bg-slate-900 text-white p-2.5 text-center rounded-sm uppercase tracking-widest font-black text-base border-b-4 border-rose-600 mb-3 shadow-sm">
-              ⚠️ PRINTER JAM REMOVER
+        <div>
+          <!-- Banner -->
+          <div class="bg-slate-900 text-white p-2.5 text-center rounded-sm uppercase tracking-widest font-black text-base border-b-4 border-rose-600 mb-4 shadow-sm">
+            ⚠️ PRINTER JAM REMOVER
+          </div>
+
+          <p class="text-center text-[11px] text-slate-600 uppercase tracking-wider font-bold mb-3">
+            EXTRACTING RESIDUAL JAM FROM HARDWARE FEED ROLLERS
+          </p>
+
+          <!-- Bread Line Drawing SVG Container -->
+          <div class="flex justify-center my-2">
+            <div class="border-2 border-slate-900 p-4 rounded-lg bg-slate-50 shadow-inner text-center">
+              <svg id="breadSvg" viewBox="0 0 200 200" width="220" height="220" class="mx-auto">
+                <path d="M 35,75 C 20,40 60,18 100,20 C 140,18 180,40 165,75 C 172,120 160,172 145,178 C 120,183 80,183 55,178 C 40,172 28,120 35,75 Z" 
+                      fill="#fde047" stroke="#1e293b" stroke-width="4.5" stroke-linejoin="round"/>
+                
+                <path d="M 42,77 C 29,46 64,26 100,28 C 136,26 171,46 158,77 C 164,118 153,165 140,170 C 118,175 82,175 60,170 C 47,165 36,118 42,77 Z" 
+                      fill="#fef9c3" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="4 4"/>
+                
+                <path id="jamBlotch" 
+                      d="M 100 100 Z" 
+                      fill="#be123c" opacity="0.88" stroke="#881337" stroke-width="1.5"
+                      style="transition: all 0.15s ease-out; filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.25));" />
+              </svg>
+
+              <span class="text-[9px] text-slate-500 font-mono mt-1 block font-bold">
+                DIAGNOSTIC VISUAL: BREAD SLICE (1:1 SCALE)
+              </span>
+            </div>
+          </div>
+
+          <!-- Analysis / Report Section -->
+          <div class="mt-4 border-2 border-slate-800 p-3 rounded bg-slate-50 space-y-1.5 text-xs">
+            <div class="font-bold border-b border-slate-400 pb-1 uppercase flex justify-between">
+              <span>📋 JAM EXTRACTION ANALYSIS REPORT</span>
+              <span class="text-rose-700">VAL: <span id="reportPercent">30</span>%</span>
             </div>
 
-            <p class="text-center text-[11px] text-slate-600 uppercase tracking-wider font-bold mb-2">
-              EXTRACTING RESIDUAL JAM FROM HARDWARE FEED ROLLERS
-            </p>
-
-            <!-- Bread Line Drawing SVG Container -->
-            <div class="flex justify-center my-2">
-              <div class="border-2 border-slate-900 p-3 rounded-lg bg-slate-50 shadow-inner text-center">
-                <svg id="breadSvg" viewBox="0 0 200 200" width="210" height="210" class="mx-auto">
-                  <path d="M 35,75 C 20,40 60,18 100,20 C 140,18 180,40 165,75 C 172,120 160,172 145,178 C 120,183 80,183 55,178 C 40,172 28,120 35,75 Z" 
-                        fill="#fde047" stroke="#1e293b" stroke-width="4.5" stroke-linejoin="round"/>
-                  
-                  <path d="M 42,77 C 29,46 64,26 100,28 C 136,26 171,46 158,77 C 164,118 153,165 140,170 C 118,175 82,175 60,170 C 47,165 36,118 42,77 Z" 
-                        fill="#fef9c3" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="4 4"/>
-                  
-                  <path id="jamBlotch" 
-                        d="M 100 100 Z" 
-                        fill="#be123c" opacity="0.88" stroke="#881337" stroke-width="1.5"
-                        style="transition: all 0.15s ease-out; filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.25));" />
-                </svg>
-
-                <span class="text-[9px] text-slate-500 font-mono mt-1 block font-bold">
-                  DIAGNOSTIC VISUAL: BREAD SLICE (1:1 SCALE)
-                </span>
-              </div>
+            <div class="grid grid-cols-2 gap-2 pt-0.5 text-[11px]">
+              <div><strong>Extracted Flavor:</strong> <span id="jamFlavor">Smucker's Concord Grape</span></div>
+              <div><strong>Consistency:</strong> <span id="jamConsistency">Viscous Gelatinous Sludge</span></div>
             </div>
 
-            <!-- Analysis / Report Section -->
-            <div class="mt-3 border-2 border-slate-800 p-3 rounded bg-slate-50 space-y-1.5 text-xs">
-              <div class="font-bold border-b border-slate-400 pb-1 uppercase flex justify-between">
-                <span>📋 JAM EXTRACTION ANALYSIS REPORT</span>
-                <span class="text-rose-700">VAL: <span id="reportPercent">30</span>%</span>
-              </div>
+            <div class="text-[11px]">
+              <strong>Residual Roller Jam:</strong> <span id="jamRemaining">70% remaining in paper tray</span>
+            </div>
 
-              <div class="grid grid-cols-2 gap-2 pt-0.5 text-[11px]">
-                <div><strong>Extracted Flavor:</strong> <span id="jamFlavor">Smucker's Concord Grape</span></div>
-                <div><strong>Consistency:</strong> <span id="jamConsistency">Viscous Gelatinous Sludge</span></div>
-              </div>
-
-              <div class="text-[11px]">
-                <strong>Residual Roller Jam:</strong> <span id="jamRemaining">70% remaining in paper tray</span>
-              </div>
-
-              <div class="p-2 bg-rose-100 border-l-4 border-rose-600 text-rose-900 font-bold mt-2 text-[11px]">
-                💡 INSTRUCTION: Reprint page to continue removing jam from printer mechanisms.
-              </div>
+            <div class="p-2 bg-rose-100 border-l-4 border-rose-600 text-rose-900 font-bold mt-2 text-[11px]">
+              💡 INSTRUCTION: Reprint page to continue removing jam from printer mechanisms.
             </div>
           </div>
         </div>
@@ -613,13 +613,13 @@
           <div>
             <div class="border-b-4 border-black pb-2 mb-3 text-center">
               <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600 block">PARANORMAL HARDWARE PURGE PROTOCOL v4.1</span>
-              <h1 class="text-xl md:text-2xl font-black uppercase tracking-widest text-slate-950 my-1">
+              <h1 class="text-xl font-black uppercase tracking-widest text-slate-950 my-1">
                 👻 GHOST-BUSTER SPECTRAL EXORCISM
               </h1>
-              <p class="text-[11px] italic text-slate-700">Official Certificate of Ectoplasmic Buffer Flush & Poltergeist Removal</p>
+              <p class="text-xs italic text-slate-700">Official Certificate of Ectoplasmic Buffer Flush & Poltergeist Removal</p>
             </div>
 
-            <div class="grid grid-cols-2 gap-2 mb-3 p-2.5 border border-slate-400 bg-white text-[10px]">
+            <div class="grid grid-cols-2 gap-3 mb-3 p-2.5 border border-slate-400 bg-white text-[10px]">
               <div>
                 <p><strong>EXORCIST:</strong> <span id="ghostTechName">Tech Dave (Ghost-Buster)</span></p>
                 <p><strong>PORT PURGED:</strong> LPT1 / TCP:9100</p>
@@ -648,7 +648,7 @@
               <p class="font-bold uppercase text-[10px] tracking-wider text-center border-b border-black pb-1">
                 📜 INCANTATIO EXORCISMUS PRINTERIS (RECITE ALOUD):
               </p>
-              <p class="italic text-slate-900 text-xs text-center leading-relaxed font-serif">
+              <p class="italic text-slate-900 text-[11px] text-center leading-relaxed font-serif">
                 "Exorcizo te, creatura spooleri, in nomine TCP/IP et Spiritus Driveris!<br>
                 Abscede, demone jammius, ab hoc fuser assembly!<br>
                 Requiescat in pace, O paper tray. Amen."
@@ -656,25 +656,26 @@
             </div>
           </div>
 
-          <div class="border-t-2 border-black pt-2 text-[10px] text-slate-800 space-y-0.5">
+          <div class="border-t-2 border-black pt-2 text-[10px] text-slate-800">
             <p><strong>PURGE SUMMARY:</strong> Phantom print jobs and rogue spooler demons permanently banished.</p>
           </div>
         </div>
       `,
 
       certificate: `
-        <div class="border-8 border-double border-slate-800 p-4 md:p-6 bg-slate-50 text-slate-900 font-sans h-full flex flex-col justify-between relative">
-          <div class="border border-slate-400 p-4 md:p-5 flex-1 flex flex-col justify-between">
+        <!-- PAGE 1: CERTIFICATE -->
+        <div class="print-page border-8 border-double border-slate-800 p-6 md:p-8 bg-slate-50 text-slate-900 font-sans h-full flex flex-col justify-between relative">
+          <div class="border border-slate-400 p-5 flex-1 flex flex-col justify-between">
             <div class="text-center space-y-1.5">
               <span class="text-[10px] font-bold tracking-[0.3em] uppercase text-slate-600 block">OFFICIAL IT DEPARTMENT CERTIFICATION</span>
               <h1 class="text-xl md:text-2xl font-bold font-serif-header uppercase tracking-wider text-slate-950">
                 PRINTER INSTALLATION CERTIFICATE
               </h1>
-              <div class="w-28 h-0.5 bg-slate-900 mx-auto mt-1"></div>
+              <div class="w-28 h-1 bg-slate-900 mx-auto mt-1"></div>
             </div>
 
             <div class="text-center my-3 space-y-1">
-              <p class="text-[10px] text-slate-600 uppercase tracking-widest">THIS DULY CERTIFIES THAT THIS PRINTING UNIT HAS BEEN</p>
+              <p class="text-[11px] text-slate-600 uppercase tracking-widest">THIS DULY CERTIFIES THAT THIS PRINTING UNIT HAS BEEN</p>
               <p class="text-xs font-bold uppercase tracking-wider text-slate-900">PROFESSIONALLY INSTALLED & CALIBRATED BY:</p>
               <p id="certTechName" class="text-lg font-bold italic font-serif-header text-slate-950 underline underline-offset-4 py-0.5">
                 [ IT Department Staff ]
@@ -709,17 +710,24 @@
             </div>
           </div>
         </div>
+
+        <!-- PAGE 2: 100% BLANK PAGE -->
+        <div class="print-page bg-white p-6 border border-slate-200 rounded-sm min-h-[980px] flex flex-col justify-between mt-8">
+          <div class="no-print opacity-40 text-slate-400 text-xs uppercase tracking-widest font-mono text-center my-auto">
+            [ PAGE 2 IS 100% BLANK ON PRINT ]
+          </div>
+        </div>
       `,
 
       pcloadletter: `
         <div class="flex flex-col justify-between h-full py-2 font-mono">
           <div class="border-b-4 border-black pb-2 flex justify-between items-center">
             <div>
-              <span class="text-[10px] font-black uppercase tracking-widest text-slate-500 block">SYSTEM ERROR DIAGNOSTIC</span>
-              <span class="text-xs font-bold text-slate-900">LASERJET III - PORT LPT1:</span>
+              <span class="text-xs font-black uppercase tracking-widest text-slate-500 block">SYSTEM ERROR DIAGNOSTIC</span>
+              <span class="text-sm font-bold text-slate-900">LASERJET III - PORT LPT1:</span>
             </div>
             <div class="text-right">
-              <span class="border-2 border-black text-slate-900 text-xs px-2 py-0.5 font-bold uppercase">CODE: 21</span>
+              <span class="border-2 border-black text-slate-900 text-xs px-2 py-1 font-bold uppercase">CODE: 21</span>
             </div>
           </div>
 
@@ -735,12 +743,12 @@
             </p>
           </div>
 
-          <div class="border-2 border-black p-4 bg-slate-50 space-y-3 text-xs">
-            <div class="border-b border-black pb-1.5 font-bold uppercase tracking-wider text-xs flex justify-between items-center">
+          <div class="border-2 border-black p-4 bg-slate-50 space-y-2 text-xs">
+            <div class="border-b border-black pb-1 font-bold uppercase tracking-wider text-xs flex justify-between items-center">
               <span>RECOMMENDED USER ACTION</span>
               <span class="text-[10px] text-slate-500">REF: INITECH-8832</span>
             </div>
-            <ol class="list-decimal pl-5 space-y-1.5 text-slate-800 text-[11px]">
+            <ol class="list-decimal pl-5 space-y-1 text-slate-800 text-[11px]">
               <li><strong>Do not panic.</strong> Repeat slowly: <em>"What the f*** does PC Load Letter mean?"</em></li>
               <li>Refrain from retrieving a baseball bat and carrying printer to an open grassy field.</li>
               <li>Load standard Letter size paper (8.5" x 11") into Cassette 2.</li>
@@ -750,90 +758,80 @@
       `,
 
       recipe: `
-        <div class="flex flex-col justify-between h-full">
-          <div>
-            <div class="border-b-4 border-black pb-2 mb-4 text-center">
-              <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">GRANDMA'S SECRET IT KITCHEN</span>
-              <h1 class="text-2xl font-black uppercase tracking-tight">EMERGENCY TONER SOUP</h1>
-              <p class="text-xs italic">Serves 1 Stressed System Administrator • Prep Time: 5 mins</p>
+        <div>
+          <div class="border-b-4 border-black pb-3 mb-4 text-center">
+            <span class="text-xs font-bold uppercase tracking-widest text-slate-500">GRANDMA'S SECRET IT KITCHEN</span>
+            <h1 class="text-2xl font-black uppercase tracking-tight">EMERGENCY TONER SOUP</h1>
+            <p class="text-xs italic">Serves 1 Stressed System Administrator • Prep Time: 5 mins</p>
+          </div>
+          <div class="grid grid-cols-12 gap-6">
+            <div class="col-span-5 border-r border-slate-300 pr-4">
+              <h3 class="font-bold border-b border-black text-xs uppercase mb-2">Ingredients</h3>
+              <ul class="space-y-2 text-xs">
+                <li>• 1 Cup Cyan Pigment Powder</li>
+                <li>• 2 Tbsp Mechanical Friction</li>
+                <li>• Pinch of Compressed Air</li>
+                <li>• 3 Sheets Crumpled Paper</li>
+              </ul>
             </div>
-            <div class="grid grid-cols-12 gap-6 my-4">
-              <div class="col-span-5 border-r border-slate-300 pr-4">
-                <h3 class="font-bold border-b border-black text-xs uppercase mb-2">Ingredients</h3>
-                <ul class="space-y-2 text-xs">
-                  <li>• 1 Cup Cyan Pigment Powder</li>
-                  <li>• 2 Tbsp Mechanical Friction</li>
-                  <li>• Pinch of Compressed Air</li>
-                  <li>• 3 Sheets Crumpled Paper</li>
-                </ul>
-              </div>
-              <div class="col-span-7">
-                <h3 class="font-bold border-b border-black text-xs uppercase mb-2">Instructions</h3>
-                <ol class="space-y-2 text-xs list-decimal pl-4">
-                  <li>Open printer front door while making eye contact with error light.</li>
-                  <li>Shake cartridge until it yields 50 extra pages.</li>
-                  <li>Fold paper and simmer over fuser roller at 180°C.</li>
-                </ol>
-              </div>
+            <div class="col-span-7">
+              <h3 class="font-bold border-b border-black text-xs uppercase mb-2">Instructions</h3>
+              <ol class="space-y-2 text-xs list-decimal pl-4">
+                <li>Open printer front door while making eye contact with error light.</li>
+                <li>Shake cartridge until it yields 50 extra pages.</li>
+                <li>Fold paper and simmer over fuser roller at 180°C.</li>
+              </ol>
             </div>
           </div>
         </div>
       `,
 
       technobabble: `
-        <div class="flex flex-col justify-between h-full">
-          <div>
-            <div class="border-b-2 border-black pb-3 mb-4 flex justify-between items-start">
-              <div>
-                <h1 class="text-lg md:text-xl font-extrabold tracking-tight uppercase">ULTRA-DIAGNOSTIC PRINTER CALIBRATION REPORT</h1>
-                <p class="text-xs text-slate-600">Sub-system Verification & Quantum Particle Alignment</p>
-              </div>
-              <div class="text-right">
-                <span class="border border-black px-2 py-0.5 font-bold text-xs uppercase">STATUS: OPTIMAL</span>
-              </div>
+        <div>
+          <div class="border-b-2 border-black pb-3 mb-4 flex justify-between items-start">
+            <div>
+              <h1 class="text-lg font-extrabold tracking-tight uppercase">ULTRA-DIAGNOSTIC PRINTER CALIBRATION REPORT</h1>
+              <p class="text-xs text-slate-600">Sub-system Verification & Quantum Particle Alignment</p>
             </div>
-            <p class="text-xs leading-relaxed text-slate-800 my-4">
-              Initializing retro-encabulator... The primary waneshaft has successfully aligned with the lunar wane-shafts. Thermal nozzle sweep completed without fatal interrupt triggers.
-            </p>
+            <div class="text-right">
+              <span class="border border-black px-2 py-1 font-bold text-xs uppercase">STATUS: OPTIMAL</span>
+            </div>
           </div>
+          <p class="text-xs leading-relaxed text-slate-800">Initializing retro-encabulator... The primary waneshaft has successfully aligned with the lunar wane-shafts. Thermal nozzle sweep completed.</p>
         </div>
       `,
 
       alignment: `
-        <div class="flex flex-col justify-between h-full">
-          <div>
-            <div class="border-b-2 border-black pb-3 mb-4 text-center">
-              <h1 class="text-xl md:text-2xl font-bold uppercase tracking-wider">PARALLEL ALIGNMENT & GEOMETRY MATRIX</h1>
-              <p class="text-xs text-slate-600">High-Precision Optical Calibration Standard</p>
-            </div>
-            <p class="mb-3 text-center font-bold text-xs">PLEASE VERIFY THAT THE BELOW PARALLEL LINES DO NOT CROSS OR CURVE</p>
-            <div class="my-6 border border-slate-400 p-4 flex flex-col items-center justify-center">
-              <svg class="w-full h-40" viewBox="0 0 500 150" fill="none" stroke="black" stroke-width="2">
-                <line x1="10" y1="20" x2="490" y2="20" />
-                <path d="M 10 60 Q 250 120 490 60" stroke-dasharray="4" />
-                <line x1="10" y1="130" x2="490" y2="90" />
-              </svg>
-            </div>
+        <div>
+          <div class="border-b-2 border-black pb-3 mb-4 text-center">
+            <h1 class="text-xl font-bold uppercase tracking-wider">PARALLEL ALIGNMENT & GEOMETRY MATRIX</h1>
+            <p class="text-xs text-slate-600">High-Precision Optical Calibration Standard</p>
+          </div>
+          <p class="mb-3 text-center font-bold text-xs">PLEASE VERIFY THAT THE BELOW PARALLEL LINES DO NOT CROSS OR CURVE</p>
+          <div class="my-6 border border-slate-400 p-4 flex flex-col items-center justify-center">
+            <svg class="w-full h-40" viewBox="0 0 500 150" fill="none" stroke="black" stroke-width="2">
+              <line x1="10" y1="20" x2="490" y2="20" />
+              <path d="M 10 60 Q 250 120 490 60" stroke-dasharray="4" />
+              <line x1="10" y1="130" x2="490" y2="90" />
+            </svg>
           </div>
         </div>
       `,
 
       invoice: `
-        <div class="flex flex-col justify-between h-full">
-          <div>
-            <div class="flex justify-between items-start border-b-2 border-black pb-3 mb-4">
-              <div>
-                <h1 class="text-xl font-black tracking-tight uppercase">ACME ABSURDITY SERVICES</h1>
-                <p class="text-[11px]">Email: billing@dev-null.void</p>
-              </div>
-              <div class="text-right">
-                <h2 class="text-lg font-bold text-slate-800">INVOICE</h2>
-                <p class="text-[11px]">Date: ${new Date().toLocaleDateString()}</p>
-              </div>
+        <div>
+          <div class="flex justify-between items-start border-b-2 border-black pb-3 mb-4">
+            <div>
+              <h1 class="text-xl font-black tracking-tight uppercase">ACME ABSURDITY SERVICES</h1>
+              <p class="text-xs">Email: billing@dev-null.void</p>
             </div>
-            <div class="p-3 border border-black text-center font-bold bg-slate-50 text-xs my-4">
-              PAYMENT STATUS: AUTO-DEBITED FROM YOUR GOOD MOOD
+            <div class="text-right">
+              <h2 class="text-lg font-bold text-slate-800">INVOICE</h2>
+              <p class="text-xs">Date: ${new Date().toLocaleDateString()}</p>
             </div>
+          </div>
+          <div class="p-3 border border-black text-center font-bold bg-slate-50 text-xs">
+            PAYMENT STATUS: AUTO-DEBITED FROM YOUR GOOD MOOD
           </div>
         </div>
       `
@@ -845,46 +843,33 @@
 
       for (let i = 1; i <= totalPages; i++) {
         const isFirst = (i === 1);
-        const isLast = (i === totalPages);
-        const isMiddle = !isFirst && !isLast;
 
         pagesHtml += `
-          <div class="print-page bg-white p-6 border border-slate-200 rounded-sm flex flex-col justify-between ${i < totalPages ? 'border-b-4 border-b-dashed border-slate-400 mb-8' : ''}">
-            ${!isMiddle ? `
+          <div class="print-page bg-white p-6 border border-slate-200 rounded-sm min-h-[980px] flex flex-col justify-between ${i < totalPages ? 'border-b-4 border-b-dashed border-slate-400 mb-8' : ''}">
+            ${isFirst ? `
               <div class="border-b border-slate-900 pb-2 flex justify-between items-center text-xs font-mono">
                 <span class="font-bold uppercase tracking-wider">📑 TRAY FEED STRESS TEST</span>
-                <span class="font-bold bg-slate-900 text-white px-2 py-0.5 rounded text-[10px]">PAGE ${i} OF ${totalPages}</span>
+                <span class="font-bold bg-slate-900 text-white px-2 py-0.5 rounded text-[10px]">PAGE 1 OF ${totalPages}</span>
               </div>
-            ` : ''}
 
-            <div class="my-auto text-center font-mono space-y-3 py-12">
-              ${isFirst ? `
-                <div class="p-6 border-2 border-slate-900 bg-slate-50 inline-block rounded max-w-md shadow-sm">
+              <div class="my-auto text-center font-mono space-y-3 py-12">
+                <div class="p-6 border-2 border-slate-900 bg-slate-50 inline-block rounded max-w-md shadow-sm text-left">
                   <h2 class="font-bold text-base mb-1 text-slate-950">PAGE 1 OF ${totalPages} (FEED START)</h2>
                   <p class="text-xs text-slate-600 leading-relaxed">
-                    Tray feed cycle initialized. Subsequent pages feed blank paper to stress-test paper pickup rollers with ZERO ink usage.
+                    Tray feed cycle initialized. All ${totalPages - 1} subsequent page(s) feed blank paper to stress-test paper pickup rollers with ZERO ink usage.
                   </p>
                 </div>
-              ` : isLast ? `
-                <div class="p-6 border-2 border-slate-900 bg-slate-50 inline-block rounded max-w-md shadow-sm">
-                  <h2 class="font-bold text-base mb-1 text-slate-950">PAGE ${totalPages} OF ${totalPages} (FEED COMPLETE)</h2>
-                  <p class="text-xs text-slate-600 leading-relaxed">
-                    Final sheet reached. Pickup rollers working cleanly.
-                  </p>
-                </div>
-              ` : `
-                <div class="no-print opacity-30 text-slate-400 text-xs uppercase tracking-widest font-mono">
-                  [ PAGE ${i} OF ${totalPages} IS 100% BLANK ON PRINT ]
-                </div>
-              `}
-            </div>
+              </div>
 
-            ${!isMiddle ? `
               <div class="border-t border-slate-300 pt-2 text-[10px] text-slate-500 font-mono flex justify-between">
                 <span>PAPERJAMMED.NET TRAY TEST</span>
-                <span>FEED COUNT: ${totalPages} SHEETS</span>
+                <span>TOTAL FEED: ${totalPages} SHEETS</span>
               </div>
-            ` : ''}
+            ` : `
+              <div class="no-print opacity-40 text-slate-400 text-xs uppercase tracking-widest font-mono text-center my-auto">
+                [ PAGE ${i} OF ${totalPages} IS 100% BLANK ON PRINT ]
+              </div>
+            `}
           </div>
         `;
       }
@@ -962,6 +947,7 @@
 
     function setTemplate(key) {
       currentTemplateKey = key;
+      const printSheet = document.getElementById('printSheet');
       const contentEl = document.getElementById('templateContent');
       const footerContainer = document.getElementById('globalFooterContainer');
 
@@ -971,8 +957,18 @@
       if (jamControls) jamControls.style.display = (key === 'jamRemover') ? 'block' : 'none';
       if (trayControls) trayControls.style.display = (key === 'trayfeed') ? 'block' : 'none';
 
+      const isMultiPage = (key === 'trayfeed' || key === 'certificate');
+
+      if (printSheet) {
+        if (isMultiPage) {
+          printSheet.classList.add('multi-page-mode');
+        } else {
+          printSheet.classList.remove('multi-page-mode');
+        }
+      }
+
       if (footerContainer) {
-        footerContainer.style.display = (key === 'trayfeed') ? 'none' : 'block';
+        footerContainer.style.display = isMultiPage ? 'none' : 'block';
       }
 
       if (key === 'trayfeed') {
