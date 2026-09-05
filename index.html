@@ -76,7 +76,7 @@
             PaperJammed<span class="text-rose-400">.net</span>
             <span class="text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full font-mono uppercase">v2.1</span>
           </h1>
-          <p class="text-xs text-slate-400">The IT-approved printer setup tool that leaves a smile.</p>
+          <p class="text-xs text-slate-400">The IT-approved printer setup tool that leaves a smile. Stay tuned, lots of updates in the works. -Admin - 9/5/2026</p>
         </div>
       </div>
 
@@ -85,7 +85,7 @@
         <div id="counterBadge" class="text-xs bg-slate-900/80 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg font-mono flex items-center gap-2 shadow-inner" title="Global Print Counter (Synced via CounterAPI V2)">
           <span id="syncStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="Cloud Synced"></span>
           <i class="fa-solid fa-fire text-amber-400 text-sm"></i>
-          <span><strong id="globalPrintCount">142</strong> Pages Printed</span>
+          <span><strong id="globalPrintCount">0</strong> Pages Printed</span>
         </div>
 
         <button onclick="handlePrintAction()" class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-2.5 rounded-lg shadow-lg flex items-center justify-center gap-2 transition duration-200 cursor-pointer">
@@ -366,12 +366,12 @@
     // ⚙️ ENHANCED COUNTER API V2 & RESILIENT PRINT INTEGRATION
     // =========================================================================
     const DEFAULT_WORKSPACE = 'paperjammed';
-    const DEFAULT_COUNTER_NAME = 'print_count';
+    const DEFAULT_COUNTER_NAME = 'paperjammedtotalcounter';
     const COUNTER_API_URL = `https://api.counterapi.dev/v2/${DEFAULT_WORKSPACE}/${DEFAULT_COUNTER_NAME}`;
     // NOTE: This key is visible to anyone who views page source. Fine for a low-stakes
     // gag counter for now, but before ads/real traffic land, move this behind a small
     // server-side proxy so the raw token isn't exposed client-side.
-    const COUNTER_API_TOKEN = 'ut_u7BK5uoDKzUaEk0QJRHpIeuJDiP9S7dsuHKu5nLA';
+    const COUNTER_API_TOKEN = 'ut_mJa5UncAt5XH0gP1kfrbvSDVOFnLQzuJbt5xiQyB';
 
     let currentJamPercent = 30;
     let currentTrayFeedCount = 5;
@@ -381,15 +381,15 @@
     function getLocalCount() {
       try {
         const raw = localStorage.getItem('pj_print_count');
-        const parsed = parseInt(raw || '142', 10);
-        return isNaN(parsed) ? 142 : parsed;
+        const parsed = parseInt(raw || '0', 10);
+        return isNaN(parsed) ? 0 : parsed;
       } catch (e) {
-        return 142;
+        return 0;
       }
     }
 
     function setLocalCount(val) {
-      const num = parseInt(val, 10) || 142;
+      const num = parseInt(val, 10) || 0;
       try {
         localStorage.setItem('pj_print_count', num);
       } catch (e) {
