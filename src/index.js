@@ -1,15 +1,14 @@
 export default {
   async fetch(request, env) {
-    try {
-      const url = new URL(request.url);
+    const url = new URL(request.url);
 
-      if (url.pathname === "/api/counter") {
+    if (url.pathname === "/api/counter") {
+      try {
         const action = url.searchParams.get("action");
-        const apiKey = env.COUNTER_API_TOKEN;
         const apiUrl = `https://api.counterapi.dev/v2/paperjammed/paperjammedtotalcounter${action === "up" ? "/up" : ""}`;
 
         const apiRes = await fetch(apiUrl, {
-          headers: { Authorization: `Bearer ${apiKey}` }
+          headers: { Authorization: `Bearer ${env.COUNTER_API_TOKEN}` }
         });
         const data = await apiRes.json();
 
@@ -17,15 +16,14 @@ export default {
           status: apiRes.status,
           headers: { "Content-Type": "application/json" }
         });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: "Counter request failed" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" }
+        });
       }
-
-      return env.ASSETS.fetch(request);
-    } catch (err) {
-      // TEMPORARY: expose the real error for debugging
-      return new Response("ERROR: " + err.message + "\n\nSTACK: " + err.stack, {
-        status: 500,
-        headers: { "Content-Type": "text/plain" }
-      });
     }
+
+    return env.ASSETS.fetch(request);
   }
 };
