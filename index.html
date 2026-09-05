@@ -82,7 +82,7 @@
 
       <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
         <!-- Live Global Print Counter Badge -->
-        <div id="counterBadge" class="text-xs bg-slate-900/80 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg font-mono flex items-center gap-2 shadow-inner" title="Global Print Counter (Synced via CounterAPI V2)">
+        <div id="counterBadge" class="text-xs bg-slate-900/80 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg font-mono flex items-center gap-2 shadow-inner" title="Global Print Counter (Synced via Cloudflare Worker Proxy)">
           <span id="syncStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="Cloud Synced"></span>
           <i class="fa-solid fa-fire text-amber-400 text-sm"></i>
           <span><strong id="globalPrintCount">0</strong> Pages Printed</span>
@@ -165,7 +165,7 @@
             <!-- Tray Feed Slider Controls -->
             <div id="trayFeedControlsBox" style="display: none;" class="mt-2 bg-cyan-950/40 border border-cyan-500/30 rounded-lg p-3.5 space-y-2.5 shadow-inner">
               <div class="flex justify-between items-center">
-                <label for="trayFeedInput" class="text-[11px] font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-1.5">
+                <label for="trayFeedNumInput" class="text-[11px] font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-1.5">
                   <i class="fa-solid fa-scroll text-cyan-400"></i>
                   <span>Paper Feed Count:</span>
                 </label>
@@ -310,14 +310,6 @@
         <p>Adding a new printer doesn't automatically list it in Chrome's primary destination dropdown without clicking "See more..." to select it from available system printers. Running a quick test print right after setup eliminates a return trip to the user 30 minutes later—now with more laughs!</p>
       </div>
 
-      <!-- Monetization Slot Placeholder (Ad Banner) -->
-      <div class="bg-slate-800/40 border border-dashed border-slate-700 rounded-xl p-4 text-center">
-        <span class="text-[10px] uppercase font-mono text-slate-500 block mb-1">Advertisement Placeholder</span>
-        <div class="bg-slate-900/60 h-28 rounded flex items-center justify-center text-slate-600 text-xs font-mono">
-          [ 300 x 250 Responsive Ad Unit ]
-        </div>
-      </div>
-
     </aside>
 
     <!-- MAIN PREVIEW CANVAS (Print Area) -->
@@ -362,13 +354,7 @@
 
   <!-- JAVASCRIPT LOGIC -->
   <script>
-    // =========================================================================
-    // ⚙️ ENHANCED COUNTER API V2 & RESILIENT PRINT INTEGRATION
-    // =========================================================================
-    // Calls go through our own Worker at /api/counter, which holds the real
-    // CounterAPI token server-side (as a Cloudflare Secret). The browser never
-    // sees the token.
-    const COUNTER_API_URL = '/api/counter';
+    const API_ENDPOINT = '/api/counter';
 
     let currentJamPercent = 30;
     let currentTrayFeedCount = 5;
@@ -390,7 +376,7 @@
       try {
         localStorage.setItem('pj_print_count', num);
       } catch (e) {
-        // Fallback for strict privacy / sandbox mode
+        // Fallback for strict sandbox mode
       }
       const el = document.getElementById('globalPrintCount');
       if (el) el.innerText = num.toLocaleString();
@@ -401,10 +387,10 @@
       if (dot) {
         if (isLive) {
           dot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
-          dot.title = "Cloud Synced (CounterAPI V2)";
+          dot.title = "Cloud Synced (Cloudflare Worker Proxy)";
         } else {
           dot.className = "w-2 h-2 rounded-full bg-amber-400";
-          dot.title = "Offline / Local Storage Fallback Mode";
+          dot.title = "Offline / Local Cache Fallback Mode";
         }
       }
     }
@@ -413,17 +399,11 @@
       const localVal = getLocalCount();
       setLocalCount(localVal);
 
-      // Skip remote API sync if running locally from disk (file://)
-      if (window.location.protocol === 'file:') {
-        setSyncStatus(false);
-        return;
-      }
-
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
         
-        const res = await fetch(`${COUNTER_API_URL}?action=get`, {
+        const res = await fetch(`${API_ENDPOINT}?action=get&t=${Date.now()}`, {
           method: 'GET',
           signal: controller.signal
         }).catch(() => null);
@@ -433,21 +413,18 @@
         if (res && res.ok) {
           const json = await res.json().catch(() => null);
           if (json) {
-            // Handles V2 API schema variations: { data: { value: X } } or { value: X }
+            // Parses {"code":"200","data":{"up_count": X, ...}} returned from worker
             const serverVal = parseInt(
-              json?.data?.value ?? json?.value ?? json?.data?.up_count ?? json?.up_count ?? 0, 
+              json?.data?.up_count ?? json?.data?.value ?? json?.up_count ?? json?.value ?? 0, 
               10
             );
-            if (serverVal > localVal) {
+            if (!isNaN(serverVal)) {
               setLocalCount(serverVal);
             }
             setSyncStatus(true);
           }
         } else {
           setSyncStatus(false);
-          if (res) {
-            console.warn('CounterAPI GET failed with status', res.status);
-          }
         }
       } catch (e) {
         setSyncStatus(false);
@@ -463,20 +440,29 @@
       const nextVal = currentVal + 1;
       setLocalCount(nextVal);
 
-      // 2. Fire-and-forget background sync to CounterAPI V2
-      if (window.location.protocol !== 'file:') {
-        try {
-          fetch(`${COUNTER_API_URL}?action=up`, {
-            method: 'GET'
-          }).then((res) => {
-            if (!res.ok) {
-              console.warn('CounterAPI /up failed with status', res.status);
-              setSyncStatus(false);
+      // 2. Sync to Cloudflare Worker proxy at /api/counter
+      try {
+        fetch(`${API_ENDPOINT}?action=up&t=${Date.now()}`, {
+          method: 'GET'
+        }).then(async (res) => {
+          if (res && res.ok) {
+            const json = await res.json().catch(() => null);
+            if (json) {
+              const serverVal = parseInt(
+                json?.data?.up_count ?? json?.data?.value ?? json?.up_count ?? json?.value ?? 0, 
+                10
+              );
+              if (!isNaN(serverVal) && serverVal > 0) {
+                setLocalCount(serverVal);
+              }
             }
-          }).catch(() => setSyncStatus(false));
-        } catch (e) {
-          setSyncStatus(false);
-        }
+            setSyncStatus(true);
+          } else {
+            setSyncStatus(false);
+          }
+        }).catch(() => setSyncStatus(false));
+      } catch (e) {
+        setSyncStatus(false);
       }
 
       // Reset debouncer after 1.5 seconds
@@ -490,7 +476,7 @@
       window.print();
     }
 
-    // Listen for native print shortcuts (Ctrl+P / Cmd+P / File -> Print)
+    // Listen for native print shortcuts (Ctrl+P / Cmd+P)
     window.addEventListener('afterprint', () => {
       incrementCounter();
     });
@@ -543,15 +529,12 @@
           <div class="flex justify-center my-4">
             <div class="border-2 border-slate-900 p-5 rounded-lg bg-slate-50 shadow-inner text-center">
               <svg id="breadSvg" viewBox="0 0 200 200" width="280" height="280" class="mx-auto">
-                <!-- Classic Bread Loaf Slice Crust Contour -->
                 <path d="M 35,75 C 20,40 60,18 100,20 C 140,18 180,40 165,75 C 172,120 160,172 145,178 C 120,183 80,183 55,178 C 40,172 28,120 35,75 Z" 
                       fill="#fde047" stroke="#1e293b" stroke-width="4.5" stroke-linejoin="round"/>
                 
-                <!-- Inner Bread Crumb Surface -->
                 <path d="M 42,77 C 29,46 64,26 100,28 C 136,26 171,46 158,77 C 164,118 153,165 140,170 C 118,175 82,175 60,170 C 47,165 36,118 42,77 Z" 
                       fill="#fef9c3" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="4 4"/>
                 
-                <!-- Smudged Jam Blotch (Dynamically Modified via JS) -->
                 <path id="jamBlotch" 
                       d="M 100 100 Z" 
                       fill="#be123c" opacity="0.88" stroke="#881337" stroke-width="1.5"
@@ -645,31 +628,25 @@
                   <path d="M 60 38 C 50 38 44 46 44 56 L 44 76 C 44 78 48 74 52 76 C 56 78 60 74 64 76 C 68 78 72 74 76 76 L 76 56 C 76 46 70 38 60 38 Z" fill="none" stroke="#000" stroke-width="2"/>
                   <circle cx="54" cy="52" r="2" fill="#000"/>
                   <circle cx="66" cy="52" r="2" fill="#000"/>
-                  <text x="56" y="28" font-size="9" font-family="monospace">☸</text>
-                  <text x="88" y="64" font-size="9" font-family="monospace">☤</text>
-                  <text x="24" y="64" font-size="9" font-family="monospace">⚕</text>
                 </svg>
               </div>
-              <span class="text-[9px] text-slate-500 block mt-1 font-bold">FIG 1.1: HARDWARE WARDING SIGIL (DO NOT REMOVE FROM TRAY)</span>
+              <span class="text-[9px] text-slate-500 block mt-1 font-bold">FIG 1.1: HARDWARE WARDING SIGIL</span>
             </div>
 
             <div class="my-4 border-2 border-black p-4 bg-white space-y-2">
               <p class="font-bold uppercase text-[11px] tracking-wider text-center border-b border-black pb-1">
                 📜 INCANTATIO EXORCISMUS PRINTERIS (RECITE ALOUD):
               </p>
-              
               <p class="italic text-slate-900 text-xs text-center leading-relaxed font-serif">
                 "Exorcizo te, creatura spooleri, in nomine TCP/IP et Spiritus Driveris!<br>
                 Abscede, demone jammius, ab hoc fuser assembly!<br>
-                Per sanctum packet loss, et buffer underrun, exorcizo ghost jobs nullus.<br>
-                Requiescat in pace, O paper tray. Amen. (System.exit(0);)"
+                Requiescat in pace, O paper tray. Amen."
               </p>
             </div>
           </div>
 
           <div class="border-t-2 border-black pt-3 text-[10px] text-slate-800 space-y-1">
-            <p><strong>PURGE SUMMARY:</strong> All haunts, phantom print jobs, midnight grinding noises, and rogue spooler demons have been permanently banished into the digital void.</p>
-            <p class="italic text-slate-600">If the printer spontaneously begins typing on its own again, light a candle and call IT immediately.</p>
+            <p><strong>PURGE SUMMARY:</strong> Phantom print jobs and rogue spooler demons permanently banished.</p>
           </div>
         </div>
       `,
@@ -687,7 +664,7 @@
 
             <div class="text-center my-4 space-y-2">
               <p class="text-xs text-slate-600 uppercase tracking-widest">THIS DULY CERTIFIES THAT THIS PRINTING UNIT HAS BEEN</p>
-              <p class="text-sm font-bold uppercase tracking-wider text-slate-900">PROFESSIONALLY INSTALLED, DRIVER-REGISTERED, AND CALIBRATED BY:</p>
+              <p class="text-sm font-bold uppercase tracking-wider text-slate-900">PROFESSIONALLY INSTALLED & CALIBRATED BY:</p>
               <p id="certTechName" class="text-xl font-bold italic font-serif-header text-slate-950 underline underline-offset-4 py-1">
                 [ IT Department Staff ]
               </p>
@@ -697,28 +674,11 @@
               <p class="font-bold uppercase tracking-wider text-slate-950 text-center mb-3">
                 OFFICIALLY CERTIFIED HARDWARE CAPABILITIES:
               </p>
-              
               <ul class="space-y-2 text-slate-800 text-[11px] max-w-xl mx-auto">
-                <li class="flex items-start gap-2">
-                  <span class="font-bold text-slate-950">•</span>
-                  <span>Fully capable of jamming during your most important deadline.</span>
-                </li>
-                <li class="flex items-start gap-2">
-                  <span class="font-bold text-slate-950">•</span>
-                  <span>Running out of black toner the exact moment you need 47 copies.</span>
-                </li>
-                <li class="flex items-start gap-2">
-                  <span class="font-bold text-slate-950">•</span>
-                  <span>Producing that one mysterious blank page no one can ever explain.</span>
-                </li>
-                <li class="flex items-start gap-2">
-                  <span class="font-bold text-slate-950">•</span>
-                  <span>Spontaneously making aggressive grinding noises at 2:00 AM when the office is silent.</span>
-                </li>
-                <li class="flex items-start gap-2">
-                  <span class="font-bold text-slate-950">•</span>
-                  <span>Refusing to print black & white documents because Yellow Ink is at 2%.</span>
-                </li>
+                <li>• Capable of jamming during your most important deadline.</li>
+                <li>• Running out of black toner when you need 47 urgent copies.</li>
+                <li>• Producing that one mysterious blank page no one can explain.</li>
+                <li>• Refusing to print B&W because Yellow Ink is at 2%.</li>
               </ul>
             </div>
 
@@ -727,12 +687,10 @@
                 <p class="font-bold text-slate-900">DATE CERTIFIED:</p>
                 <p class="text-slate-700">${new Date().toLocaleDateString()}</p>
               </div>
-
               <div class="text-center">
                 <div class="w-40 border-b border-slate-800 mb-1"></div>
                 <p class="font-bold text-slate-900 uppercase">OFFICIAL SEAL OF APPROVAL</p>
               </div>
-
               <div class="text-right">
                 <p class="font-bold text-slate-900">SYSTEM STATUS:</p>
                 <p class="text-slate-700">100% OPERATIONAL</p>
@@ -743,14 +701,14 @@
       `,
 
       pcloadletter: `
-        <div class="flex flex-col justify-between h-full py-4">
-          <div class="border-b-4 border-black pb-3 flex justify-between items-center font-mono">
+        <div class="flex flex-col justify-between h-full py-4 font-mono">
+          <div class="border-b-4 border-black pb-3 flex justify-between items-center">
             <div>
               <span class="text-xs font-black uppercase tracking-widest text-slate-500 block">SYSTEM ERROR DIAGNOSTIC</span>
               <span class="text-sm font-bold text-slate-900">LASERJET III - PORT LPT1:</span>
             </div>
             <div class="text-right">
-              <span class="border-2 border-black text-slate-900 text-xs px-2 py-1 font-bold uppercase tracking-wider">CODE: 21</span>
+              <span class="border-2 border-black text-slate-900 text-xs px-2 py-1 font-bold uppercase">CODE: 21</span>
             </div>
           </div>
 
@@ -758,32 +716,24 @@
             <p class="text-slate-700 font-dotmatrix text-2xl md:text-3xl tracking-widest mb-2 font-bold uppercase">
               ** PRINTER STATUS ERROR **
             </p>
-            
             <h1 class="text-slate-950 font-dotmatrix text-6xl md:text-8xl font-black tracking-widest my-4 py-1">
               PC LOAD LETTER
             </h1>
-
             <p class="text-slate-800 font-dotmatrix text-xl md:text-2xl tracking-widest mt-2 font-bold uppercase">
               [ PAPER CASSETTE EMPTY: LOAD LETTER ]
             </p>
           </div>
 
-          <div class="border-2 border-black p-6 bg-slate-50 space-y-4 font-mono text-xs">
+          <div class="border-2 border-black p-6 bg-slate-50 space-y-4 text-xs">
             <div class="border-b border-black pb-2 font-bold uppercase tracking-wider text-sm flex justify-between items-center">
               <span>RECOMMENDED USER ACTION</span>
               <span class="text-[10px] text-slate-500">REF: INITECH-8832</span>
             </div>
-
             <ol class="list-decimal pl-5 space-y-2 text-slate-800 text-xs">
               <li><strong>Do not panic.</strong> Repeat slowly: <em>"What the f*** does PC Load Letter mean?"</em></li>
               <li>Refrain from retrieving a baseball bat and carrying printer to an open grassy field.</li>
-              <li>Load standard Letter size paper (8.5" x 11") into Paper Cassette 2.</li>
-              <li>Contemplate career choices at Initech, LLC.</li>
+              <li>Load standard Letter size paper (8.5" x 11") into Cassette 2.</li>
             </ol>
-
-            <div class="pt-3 border-t border-slate-300 text-slate-600 italic text-[11px] text-center">
-              "Why should I change my name? He's the one who sucks." — Michael Bolton (1999)
-            </div>
           </div>
         </div>
       `,
@@ -795,33 +745,24 @@
             <h1 class="text-2xl font-black uppercase tracking-tight">EMERGENCY TONER SOUP</h1>
             <p class="text-xs italic">Serves 1 Stressed System Administrator • Prep Time: 5 mins</p>
           </div>
-
           <div class="grid grid-cols-12 gap-6">
             <div class="col-span-5 border-r border-slate-300 pr-4">
               <h3 class="font-bold border-b border-black text-xs uppercase mb-2">Ingredients</h3>
               <ul class="space-y-2 text-xs">
                 <li>• 1 Cup Cyan Pigment Powder</li>
                 <li>• 2 Tbsp Mechanical Friction</li>
-                <li>• A Pinch of Compressed Air</li>
-                <li>• 3 Sheets of Crumpled Paper</li>
-                <li>• 100ml Unfiltered Java Code</li>
-                <li>• Dash of Despair (Optional)</li>
+                <li>• Pinch of Compressed Air</li>
+                <li>• 3 Sheets Crumpled Paper</li>
               </ul>
             </div>
-
             <div class="col-span-7">
               <h3 class="font-bold border-b border-black text-xs uppercase mb-2">Instructions</h3>
               <ol class="space-y-2 text-xs list-decimal pl-4">
-                <li>Open the printer front door while making direct eye contact with the error light.</li>
-                <li>Gently shake the cartridge until it yields approximately 50 extra pages.</li>
-                <li>Fold paper into small squares and simmer over the fuser roller at 180°C.</li>
-                <li>Garnish with freshly cleared print queues and serve warm.</li>
+                <li>Open printer front door while making eye contact with error light.</li>
+                <li>Shake cartridge until it yields 50 extra pages.</li>
+                <li>Fold paper and simmer over fuser roller at 180°C.</li>
               </ol>
             </div>
-          </div>
-
-          <div class="mt-8 p-4 bg-slate-100 border-l-2 border-slate-800 text-xs">
-            <strong>CHEF'S NOTE:</strong> If soup tastes like burned plastic, your fuser unit is working at optimal capacity. Do not ingest actual toner.
           </div>
         </div>
       `,
@@ -837,38 +778,7 @@
               <span class="border border-black px-2 py-1 font-bold text-xs uppercase">STATUS: OPTIMAL</span>
             </div>
           </div>
-
-          <div class="grid grid-cols-2 gap-4 mb-6 border border-slate-300 p-4 bg-slate-50">
-            <div>
-              <p><strong>DEVICE HOST:</strong> LOCAL_PRN_PRANK_01</p>
-              <p><strong>FLUX DENSITY:</strong> 98.42% nominal</p>
-              <p><strong>CYAN DAMPENING:</strong> Active (22 micro-pascals)</p>
-            </div>
-            <div>
-              <p><strong>PAPER TENSION:</strong> 42.1 Gravitons</p>
-              <p><strong>SARCASM BUFFER:</strong> 100% Full</p>
-              <p><strong>GHOST JOBS CLEAR:</strong> YES</p>
-            </div>
-          </div>
-
-          <div class="space-y-4 text-slate-800 leading-relaxed text-sm">
-            <p class="font-bold border-b border-slate-300 pb-1 uppercase">1. SYSTEM INTERPRETER LOGS</p>
-            <p>Initializing retro-encabulator... The primary waneshaft has successfully aligned with the lunar wane-shafts. No unwanted side-flector vibrations were detected in the marzelvanes.</p>
-            
-            <p>Thermal nozzle sweep completed. All 4,800 micro-injectors fired with exactly 0.0003 milliseconds of latency. If this page printed cleanly, your hardware is operating in 4-dimensional harmony with local space-time.</p>
-
-            <div class="my-6 p-4 border-l-4 border-black bg-slate-100 italic">
-              "Warning: If page turns blue, do not panic. Simply stroke the paper feeding tray three times and whisper encouraging words to the toner drum."
-            </div>
-
-            <p class="font-bold border-b border-slate-300 pb-1 uppercase">2. NOZZLE RECEPTIVITY TEST</p>
-            <p class="font-mono text-xs">
-              [X] Black Pigment Node ....... OK<br>
-              [X] Sarcasm Synthesizer ...... OK<br>
-              [X] Paper Jam Predictor ...... FAILED (As expected)<br>
-              [X] Wifi Signal Magic ........ OK
-            </p>
-          </div>
+          <p class="text-sm leading-relaxed text-slate-800">Initializing retro-encabulator... The primary waneshaft has successfully aligned with the lunar wane-shafts. Thermal nozzle sweep completed.</p>
         </div>
       `,
 
@@ -876,42 +786,16 @@
         <div>
           <div class="border-b-2 border-black pb-4 mb-6 text-center">
             <h1 class="text-2xl font-bold uppercase tracking-wider">PARALLEL ALIGNMENT & GEOMETRY MATRIX</h1>
-            <p class="text-xs text-slate-600">High-Precision Optical Calibration Standard (ISO-9001-PRANK)</p>
+            <p class="text-xs text-slate-600">High-Precision Optical Calibration Standard</p>
           </div>
-
           <p class="mb-4 text-center font-bold">PLEASE VERIFY THAT THE BELOW PARALLEL LINES DO NOT CROSS OR CURVE</p>
-
           <div class="my-8 border border-slate-400 p-6 flex flex-col items-center justify-center">
             <svg class="w-full h-48" viewBox="0 0 500 150" fill="none" stroke="black" stroke-width="2">
               <line x1="10" y1="20" x2="490" y2="20" />
-              <text x="15" y="15" font-size="8" fill="black">LINE A (Ref. True North)</text>
-
               <path d="M 10 60 Q 250 120 490 60" stroke-dasharray="4" />
-              <text x="15" y="55" font-size="8" fill="black">LINE B ("Strictly Parallel")</text>
-
               <line x1="10" y1="130" x2="490" y2="90" />
-              <text x="15" y="125" font-size="8" fill="black">LINE C (Linear Vector)</text>
             </svg>
           </div>
-
-          <div class="grid grid-cols-2 gap-4 my-6 text-center">
-            <div class="border border-slate-300 p-3">
-              <span class="block font-bold">BOX 1: STRAIGHTNESS</span>
-              <div class="w-12 h-12 border-2 border-black rounded-full mx-auto my-2 flex items-center justify-center">
-                <span class="text-lg">✕</span>
-              </div>
-              <span class="text-[10px] text-slate-500">Crooked as a river</span>
-            </div>
-            <div class="border border-slate-300 p-3">
-              <span class="block font-bold">BOX 2: EQUIDISTANT</span>
-              <div class="w-12 h-12 border-2 border-black mx-auto my-2 flex items-center justify-center">
-                <span class="text-lg">?</span>
-              </div>
-              <span class="text-[10px] text-slate-500">Not even close</span>
-            </div>
-          </div>
-
-          <p class="text-xs text-center italic">If Line A and Line B intersect on your paper, your printer has transcended Euclidean Geometry. Congratulations!</p>
         </div>
       `,
 
@@ -920,70 +804,13 @@
           <div class="flex justify-between items-start border-b-2 border-black pb-4 mb-6">
             <div>
               <h1 class="text-2xl font-black tracking-tight uppercase">ACME ABSURDITY SERVICES</h1>
-              <p class="text-xs">123 Cloud Server Lane, Suite 404</p>
               <p class="text-xs">Email: billing@dev-null.void</p>
             </div>
             <div class="text-right">
               <h2 class="text-xl font-bold text-slate-800">INVOICE</h2>
-              <p class="text-xs">INV-2026-9941</p>
               <p class="text-xs">Date: ${new Date().toLocaleDateString()}</p>
             </div>
           </div>
-
-          <div class="mb-6 p-3 bg-slate-100 border border-slate-200">
-            <p class="font-bold text-xs">BILLED TO:</p>
-            <p class="text-sm font-semibold">Unsuspecting Printer Owner / Recipient</p>
-            <p class="text-xs">Department of "Who Left This On The Printer?"</p>
-          </div>
-
-          <table class="w-full text-left border-collapse mb-6">
-            <thead>
-              <tr class="border-b border-black text-xs">
-                <th class="py-2">QTY</th>
-                <th class="py-2">DESCRIPTION</th>
-                <th class="py-2 text-right">UNIT PRICE</th>
-                <th class="py-2 text-right">AMOUNT</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-200 text-xs">
-              <tr>
-                <td class="py-2.5">1</td>
-                <td class="py-2.5">Perpetual Sarcasm Maintenance License (Enterprise)</td>
-                <td class="py-2.5 text-right">$199.00</td>
-                <td class="py-2.5 text-right">$199.00</td>
-              </tr>
-              <tr>
-                <td class="py-2.5">300</td>
-                <td class="py-2.5">Extra Grams of Invisible Yellow Dot Tracking Ink</td>
-                <td class="py-2.5 text-right">$0.50</td>
-                <td class="py-2.5 text-right">$150.00</td>
-              </tr>
-              <tr>
-                <td class="py-2.5">1</td>
-                <td class="py-2.5">Emergency IT Percussive Maintenance (Kicking the tray)</td>
-                <td class="py-2.5 text-right">$85.00</td>
-                <td class="py-2.5 text-right">$85.00</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div class="flex justify-end mb-8">
-            <div class="w-1/2 space-y-1 text-right text-xs">
-              <div class="flex justify-between">
-                <span>Subtotal:</span>
-                <span>$434.00</span>
-              </div>
-              <div class="flex justify-between">
-                <span>Paper Jam Insurance:</span>
-                <span>$12.50</span>
-              </div>
-              <div class="flex justify-between font-bold text-sm border-t border-black pt-1">
-                <span>TOTAL DUE:</span>
-                <span>$446.50</span>
-              </div>
-            </div>
-          </div>
-
           <div class="p-3 border border-black text-center font-bold bg-slate-50">
             PAYMENT STATUS: AUTO-DEBITED FROM YOUR GOOD MOOD
           </div>
@@ -1016,19 +843,17 @@
                   <p class="text-xs text-slate-600 leading-relaxed">
                     Tray feed cycle initialized. Subsequent pages feed blank paper to stress-test paper pickup rollers with ZERO ink usage.
                   </p>
-                  <span class="text-[10px] text-slate-400 font-bold block mt-3 uppercase tracking-widest">MINIMAL INK CONSUMPTION</span>
                 </div>
               ` : isLast ? `
                 <div class="p-6 border-2 border-slate-900 bg-slate-50 inline-block rounded max-w-md shadow-sm">
                   <h2 class="font-bold text-base mb-1 text-slate-950">PAGE ${totalPages} OF ${totalPages} (FEED COMPLETE)</h2>
                   <p class="text-xs text-slate-600 leading-relaxed">
-                    Final sheet reached. If you have exactly ${totalPages} pages in output tray, pickup rollers and separator pads are working.
+                    Final sheet reached. Pickup rollers working cleanly.
                   </p>
-                  <span class="text-[10px] text-emerald-700 font-bold block mt-3 uppercase tracking-widest">✓ FEED TEST SUCCESSFUL</span>
                 </div>
               ` : `
                 <div class="no-print opacity-30 text-slate-400 text-xs uppercase tracking-widest font-mono">
-                  [ SCREEN PREVIEW: PAGE ${i} OF ${totalPages} IS 100% BLANK ON PRINT ]
+                  [ PAGE ${i} OF ${totalPages} IS 100% BLANK ON PRINT ]
                 </div>
               `}
             </div>
