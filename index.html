@@ -76,7 +76,7 @@
             PaperJammed<span class="text-rose-400">.net</span>
             <span class="text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full font-mono uppercase">v2.1</span>
           </h1>
-          <p class="text-xs text-slate-400">The IT-approved printer setup tool that leaves a smile. Stay tuned, lots of updates in the works. -Admin - 9/5/2026</p>
+          <p class="text-xs text-slate-400">The IT-approved printer setup tool that leaves a smile.</p>
         </div>
       </div>
 
@@ -365,13 +365,10 @@
     // =========================================================================
     // ⚙️ ENHANCED COUNTER API V2 & RESILIENT PRINT INTEGRATION
     // =========================================================================
-    const DEFAULT_WORKSPACE = 'paperjammed';
-    const DEFAULT_COUNTER_NAME = 'paperjammedtotalcounter';
-    const COUNTER_API_URL = `https://api.counterapi.dev/v2/${DEFAULT_WORKSPACE}/${DEFAULT_COUNTER_NAME}`;
-    // NOTE: This key is visible to anyone who views page source. Fine for a low-stakes
-    // gag counter for now, but before ads/real traffic land, move this behind a small
-    // server-side proxy so the raw token isn't exposed client-side.
-    const COUNTER_API_TOKEN = 'ut_mJa5UncAt5XH0gP1kfrbvSDVOFnLQzuJbt5xiQyB';
+    // Calls go through our own Worker at /api/counter, which holds the real
+    // CounterAPI token server-side (as a Cloudflare Secret). The browser never
+    // sees the token.
+    const COUNTER_API_URL = '/api/counter';
 
     let currentJamPercent = 30;
     let currentTrayFeedCount = 5;
@@ -426,11 +423,8 @@
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 2000);
         
-        const res = await fetch(COUNTER_API_URL, {
+        const res = await fetch(`${COUNTER_API_URL}?action=get`, {
           method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${COUNTER_API_TOKEN}`
-          },
           signal: controller.signal
         }).catch(() => null);
         
@@ -472,11 +466,8 @@
       // 2. Fire-and-forget background sync to CounterAPI V2
       if (window.location.protocol !== 'file:') {
         try {
-          fetch(`${COUNTER_API_URL}/up`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${COUNTER_API_TOKEN}`
-            }
+          fetch(`${COUNTER_API_URL}?action=up`, {
+            method: 'GET'
           }).then((res) => {
             if (!res.ok) {
               console.warn('CounterAPI /up failed with status', res.status);
