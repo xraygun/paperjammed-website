@@ -53,6 +53,6 @@ export const templates = {
   allyourbase,
   alignment,
   invoice,
-  spaceball
-  printerjamremovertemplate
+  spaceball,
+  printerjamremovertemplate,
 };
