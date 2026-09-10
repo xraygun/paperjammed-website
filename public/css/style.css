@@ -1,0 +1,65 @@
+/* Browser print configuration: margin 0 disables native header/footer (URL, date, page numbers) */
+@page {
+  size: portrait;
+  margin: 0;
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-area {
+    display: block !important;
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 10mm !important;
+    box-sizing: border-box !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    overflow: hidden !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+  /* Multi-page containers (Tray Feed & Certificate) break explicitly per page element */
+  .print-area.multi-page-mode {
+    padding: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+  .print-page {
+    page-break-after: always !important;
+    break-after: page !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    box-sizing: border-box !important;
+    padding: 10mm !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+  }
+  .print-page:last-child {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+}
+
+.font-dotmatrix {
+  font-family: 'VT323', 'Courier New', monospace;
+}
+
+.font-serif-header {
+  font-family: 'Cinzel', 'Georgia', serif;
+}
