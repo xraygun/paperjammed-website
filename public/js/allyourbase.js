@@ -1,5 +1,5 @@
 export default {
-  key: 'allYourBase',
+  key: 'allyourbase',
   label: 'All Your Base',
   description: 'A CATS system transmission log and printer diagnostic override.',
   icon: 'fa-bomb',
