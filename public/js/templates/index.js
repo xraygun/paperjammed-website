@@ -10,7 +10,7 @@
 // automatically. You never need to touch app.js or index.html.
 // ============================================================================
 
-import jamRemover from './jamRemover.js';
+//import jamRemover from './jamRemover.js';
 import trayfeed from './trayfeed.js';
 import kiss from './kiss.js';
 import ghost from './ghost.js';
@@ -26,7 +26,7 @@ import jamRemover from './printerjamRemovertemplate.js';
 
 // Order controls the order they appear in the sidebar.
 export const templateOrder = [
-  'jamRemover',
+//  'jamRemover',
   'trayfeed',
   'kiss',
   'ghost',
@@ -42,7 +42,7 @@ export const templateOrder = [
 ];
 
 export const templates = {
-  jamRemover,
+//  jamRemover,
   trayfeed,
   kiss,
   ghost,
