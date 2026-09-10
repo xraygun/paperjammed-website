@@ -21,7 +21,7 @@ import technobabble from './technobabble.js';
 import alignment from './alignment.js';
 import invoice from './invoice.js';
 import spaceball from './spaceball.js';
-import allYourBase from './allYourBase.js';
+import allyourbase from './allyourbase.js';
 
 // Order controls the order they appear in the sidebar.
 export const templateOrder = [
@@ -33,7 +33,7 @@ export const templateOrder = [
   'pcloadletter',
   'recipe',
   'technobabble',
-  'allYourBase' ,
+  'allyourbase' ,
   'alignment',
   'invoice',
   'spaceball'
@@ -48,7 +48,7 @@ export const templates = {
   pcloadletter,
   recipe,
   technobabble,
-  allYourBase,
+  allyourbase,
   alignment,
   invoice,
   spaceball
