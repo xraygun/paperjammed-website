@@ -22,7 +22,6 @@ import alignment from './alignment.js';
 import invoice from './invoice.js';
 import spaceball from './spaceball.js';
 import allyourbase from './allyourbase.js';
-import jamRemover from './printerjamRemovertemplate.js';
 
 // Order controls the order they appear in the sidebar.
 export const templateOrder = [
@@ -38,7 +37,6 @@ export const templateOrder = [
   'alignment',
   'invoice',
   'spaceball'
-  'printerjamRemovertemplate'
 ];
 
 export const templates = {
@@ -53,6 +51,5 @@ export const templates = {
   allyourbase,
   alignment,
   invoice,
-  spaceball,
-  printerjamremovertemplate,
+  spaceball
 };
