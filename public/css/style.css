@@ -17,7 +17,13 @@
     display: none !important;
   }
   .print-area {
-    display: block !important;
+    /* Intentionally NOT forcing display:block here. #printSheet is a
+       Tailwind `flex flex-col justify-between` element, and single-page
+       templates rely on that flex layout to spread their content and the
+       shared footer across the full physical page. Forcing block layout
+       breaks that: content collapses to the top with a large blank gap
+       below, since block flow doesn't distribute leftover vertical space
+       the way flex-grow does. */
     box-shadow: none !important;
     border: none !important;
     width: 100% !important;
@@ -31,8 +37,11 @@
     page-break-after: avoid !important;
     break-after: avoid !important;
   }
-  /* Multi-page containers (Tray Feed & Certificate) break explicitly per page element */
+  /* Multi-page containers (Tray Feed & Certificate) break explicitly per page element.
+     display:block is safe (even preferable) here since each .print-page below has
+     its own forced height and doesn't need flex distribution from this parent. */
   .print-area.multi-page-mode {
+    display: block !important;
     padding: 0 !important;
     height: auto !important;
     max-height: none !important;
@@ -62,4 +71,17 @@
 
 .font-serif-header {
   font-family: 'Cinzel', 'Georgia', serif;
+}
+
+/* Anchors a template's site-URL footer line to the physical bottom of a
+   .print-page, ~1cm (10mm) up from the edge — regardless of how tall the
+   page's own content happens to be. The nearest ancestor with `position:
+   relative` (normally the .print-page div itself) must wrap this. */
+.page-footer-url {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 10mm;
+  text-align: center;
+  pointer-events: none;
 }
