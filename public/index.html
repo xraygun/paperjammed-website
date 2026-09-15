@@ -96,7 +96,7 @@
       </div>
 
       <!-- PRINT SHEET CONTAINER -->
-      <div id="printSheet" class="print-area bg-white text-slate-900 p-6 md:p-8 shadow-2xl rounded-sm w-full max-w-[800px] min-h-[980px] flex flex-col justify-between font-mono text-xs border border-slate-200">
+      <div id="printSheet" class="print-area relative bg-white text-slate-900 p-6 md:p-8 shadow-2xl rounded-sm w-full max-w-[800px] min-h-[980px] flex flex-col justify-between font-mono text-xs border border-slate-200">
 
         <!-- CONTENT INJECTED DYNAMICALLY VIA JS -->
         <div id="templateContent" class="flex-1 flex flex-col justify-between">
@@ -111,7 +111,7 @@
               <p id="printedFootnote" class="text-[10px] text-slate-600 italic">IT Print Verification Completed. Do not discard unless Chuck Norris says so.</p>
             </div>
             <div class="text-right">
-              <span class="text-[9px] text-slate-400 font-sans font-bold block">PAPERJAMMED.NET LOGICAL UNIT</span>
+              <span id="siteUrlLabel" class="text-[9px] text-slate-400 font-sans font-bold block"></span>
             </div>
           </div>
 
