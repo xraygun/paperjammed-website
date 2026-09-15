@@ -1,3 +1,5 @@
+import { siteFooterLine } from '../siteConfig.js';
+
 export default {
   key: 'certificate',
   label: 'Installation Certificate',
@@ -10,32 +12,55 @@ export default {
   configType: 'bw',
   multiPage: true,
 
-  render() {
+  // Installer name — its own dedicated field under this template's sidebar
+  // entry, independent of the shared "Optional Customization" note.
+  controlsHtml(state) {
+    const name = state.certTechName || '';
     return `
-      <!-- PAGE 1: CERTIFICATE -->
-      <div class="print-page border-8 border-double border-slate-800 p-6 md:p-8 bg-slate-50 text-slate-900 font-sans h-full flex flex-col justify-between relative">
-        <div class="border border-slate-400 p-5 flex-1 flex flex-col justify-between">
-          <div class="text-center space-y-1.5">
-            <span class="text-[10px] font-bold tracking-[0.3em] uppercase text-slate-600 block">OFFICIAL IT DEPARTMENT CERTIFICATION</span>
-            <h1 class="text-xl md:text-2xl font-bold font-serif-header uppercase tracking-wider text-slate-950">
+      <div class="mt-2 bg-slate-800/60 border border-slate-600/40 rounded-lg p-3 space-y-1.5">
+        <label for="certTechNameInput" class="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+          <i class="fa-solid fa-signature text-slate-400"></i>
+          <span>Installer Name:</span>
+        </label>
+        <input type="text" id="certTechNameInput" value="${name}" oninput="handleCertTechNameChange(this.value)"
+          placeholder="e.g., Tech Dave (IT Dept)"
+          class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+      </div>
+    `;
+  },
+
+  render(state) {
+    const techName = (state.certTechName && state.certTechName.trim() !== '')
+      ? state.certTechName
+      : '[ IT Department Staff ]';
+
+    return `
+      <!-- PAGE 1: CERTIFICATE — spacing kept deliberately tight and fixed
+           (no flex-grow/justify-between stretch) so its total height is
+           predictable and doesn't depend on vh-based fill arithmetic. -->
+      <div class="print-page border-4 border-double border-slate-800 p-4 md:p-5 bg-slate-50 text-slate-900 font-sans relative">
+        <div class="border border-slate-400 p-3.5">
+          <div class="text-center space-y-1">
+            <span class="text-[9px] font-bold tracking-[0.25em] uppercase text-slate-600 block">OFFICIAL IT DEPARTMENT CERTIFICATION</span>
+            <h1 class="text-lg md:text-xl font-bold font-serif-header uppercase tracking-wider text-slate-950">
               PRINTER INSTALLATION CERTIFICATE
             </h1>
-            <div class="w-28 h-1 bg-slate-900 mx-auto mt-1"></div>
+            <div class="w-24 h-1 bg-slate-900 mx-auto mt-1"></div>
           </div>
 
-          <div class="text-center my-3 space-y-1">
-            <p class="text-[11px] text-slate-600 uppercase tracking-widest">THIS DULY CERTIFIES THAT THIS PRINTING UNIT HAS BEEN</p>
-            <p class="text-xs font-bold uppercase tracking-wider text-slate-900">PROFESSIONALLY INSTALLED & CALIBRATED BY:</p>
-            <p id="certTechName" class="text-lg font-bold italic font-serif-header text-slate-950 underline underline-offset-4 py-0.5">
-              [ IT Department Staff ]
+          <div class="text-center mt-2.5 mb-2 space-y-0.5">
+            <p class="text-[10px] text-slate-600 uppercase tracking-widest">THIS DULY CERTIFIES THAT THIS PRINTING UNIT HAS BEEN</p>
+            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-900">PROFESSIONALLY INSTALLED & CALIBRATED BY:</p>
+            <p id="certTechName" class="text-base font-bold italic font-serif-header text-slate-950 underline underline-offset-4 py-0.5">
+              ${techName}
             </p>
           </div>
 
-          <div class="my-2 border-t border-b border-slate-300 py-3 font-mono text-xs space-y-1.5">
-            <p class="font-bold uppercase tracking-wider text-slate-950 text-center mb-2 text-[11px]">
+          <div class="my-2 border-t border-b border-slate-300 py-2 font-mono text-xs space-y-1">
+            <p class="font-bold uppercase tracking-wider text-slate-950 text-center mb-1.5 text-[10px]">
               OFFICIALLY CERTIFIED HARDWARE CAPABILITIES:
             </p>
-            <ul class="space-y-1.5 text-slate-800 text-[10px] max-w-xl mx-auto">
+            <ul class="space-y-1 text-slate-800 text-[9px] max-w-xl mx-auto">
               <li>• Capable of jamming during your most important deadline.</li>
               <li>• Running out of black toner when you need 47 urgent copies.</li>
               <li>• Producing that one mysterious blank page no one can explain.</li>
@@ -43,13 +68,13 @@ export default {
             </ul>
           </div>
 
-          <div class="flex justify-between items-end pt-3 mt-1 border-t border-slate-300 font-mono text-[9px]">
+          <div class="flex justify-between items-end pt-2 mt-1 border-t border-slate-300 font-mono text-[9px]">
             <div>
               <p class="font-bold text-slate-900">DATE CERTIFIED:</p>
               <p class="text-slate-700">${new Date().toLocaleDateString()}</p>
             </div>
             <div class="text-center">
-              <div class="w-32 border-b border-slate-800 mb-1"></div>
+              <div class="w-28 border-b border-slate-800 mb-1"></div>
               <p class="font-bold text-slate-900 uppercase">OFFICIAL SEAL OF APPROVAL</p>
             </div>
             <div class="text-right">
@@ -58,6 +83,8 @@ export default {
             </div>
           </div>
         </div>
+
+        ${siteFooterLine('CERTIFICATION UNIT')}
       </div>
 
       <!-- PAGE 2: 100% BLANK PAGE -->
