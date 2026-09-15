@@ -1,5 +1,6 @@
 import { templates, templateOrder } from './templates/index.js';
 import { calibrationBars } from './calibrationBars.js';
+import { SITE_URL } from './siteConfig.js';
 
 const API_ENDPOINT = '/api/counter';
 
@@ -127,6 +128,59 @@ function handlePrintAction() {
 window.addEventListener('afterprint', () => {
   incrementCounter();
 });
+
+// ----------------------------------------------------------------------------
+// Auto shrink-to-fit for single-page templates.
+//
+// Multi-page templates (multiPage: true) are deliberately EXCLUDED — they're
+// built from one or more fixed-height .print-page divs whose sizing and
+// page-break math depends on staying their true size. Scaling those down
+// would throw off pagination and make each page a different, unpredictable
+// size. Only #templateContent for single-page templates gets scaled.
+// ----------------------------------------------------------------------------
+const SHRINK_MIN_SCALE = 0.55; // below this, the content is too long — trim it instead of relying on shrinking
+const SHRINK_FOOTER_RESERVE_PX = 90; // rough space reserved for the absolutely-positioned global footer
+
+function mmToPx(mm) {
+  return (mm * 96) / 25.4;
+}
+
+function resetShrinkToFit() {
+  const contentEl = document.getElementById('templateContent');
+  if (!contentEl) return;
+  contentEl.style.transform = '';
+  contentEl.style.transformOrigin = '';
+  contentEl.style.width = '';
+}
+
+function applyShrinkToFit() {
+  const t = templates[state.currentTemplateKey];
+  resetShrinkToFit();
+  if (!t || t.multiPage) return; // never scale multi-page templates
+
+  const printSheet = document.getElementById('printSheet');
+  const contentEl = document.getElementById('templateContent');
+  if (!printSheet || !contentEl) return;
+
+  const availableHeight = printSheet.clientHeight - 2 * mmToPx(10) - SHRINK_FOOTER_RESERVE_PX;
+  const naturalHeight = contentEl.scrollHeight;
+
+  if (naturalHeight > availableHeight && availableHeight > 0) {
+    const scale = Math.max(availableHeight / naturalHeight, SHRINK_MIN_SCALE);
+    contentEl.style.transformOrigin = 'top left';
+    contentEl.style.transform = `scale(${scale})`;
+    contentEl.style.width = `${100 / scale}%`;
+    if (scale <= SHRINK_MIN_SCALE) {
+      console.warn(
+        `[${t.key}] content is too tall to shrink-to-fit cleanly (would need scale ${(availableHeight / naturalHeight).toFixed(2)}). ` +
+        `Capped at ${SHRINK_MIN_SCALE} — consider trimming this template's content instead.`
+      );
+    }
+  }
+}
+
+window.addEventListener('beforeprint', applyShrinkToFit);
+window.addEventListener('afterprint', resetShrinkToFit);
 
 // ----------------------------------------------------------------------------
 // Sidebar rendering (fully data-driven off the template registry)
@@ -305,6 +359,9 @@ function updateCustomNote() {
 // Boot
 // ----------------------------------------------------------------------------
 function initApp() {
+  const siteUrlLabel = document.getElementById('siteUrlLabel');
+  if (siteUrlLabel) siteUrlLabel.textContent = `${SITE_URL.toUpperCase()} LOGICAL UNIT`;
+
   renderSidebar();
   setTemplate(state.currentTemplateKey);
   loadPrintCount();
