@@ -1,3 +1,5 @@
+import { siteFooterLine } from '../siteConfig.js';
+
 export default {
   key: 'certificate',
   label: 'Installation Certificate',
@@ -57,6 +59,9 @@ export default {
               <p class="text-slate-700">100% OPERATIONAL</p>
             </div>
           </div>
+        </div>
+        <div class="text-center mt-2">
+          ${siteFooterLine('CERTIFICATION UNIT')}
         </div>
       </div>
 
