@@ -82,6 +82,23 @@
     overflow: hidden !important;
     min-height: 0 !important;
   }
+
+  /* The single-page global footer used to rely on flex-grow (on
+     #templateContent) computing an exact remainder that sums to precisely
+     100vh. `vh` units combined with flex distribution are unreliable
+     across browsers for that kind of pixel-perfect math in print contexts
+     — the arithmetic can be off by enough to tip a page into a spurious
+     second page just to hold the footer. Pinning the footer with absolute
+     positioning against #printSheet's own box (which has a hard, fixed
+     100vh height) sidesteps that arithmetic entirely: it's placed by
+     direct geometry, not by what's "left over" after content renders. */
+  #globalFooterContainer {
+    position: absolute !important;
+    left: 10mm !important;
+    right: 10mm !important;
+    bottom: 10mm !important;
+    margin: 0 !important;
+  }
 }
 
 .font-dotmatrix {
