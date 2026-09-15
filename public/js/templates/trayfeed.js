@@ -1,9 +1,10 @@
 // Tray Feed Stress Test template
 // This one is dynamic: it draws `state.trayFeedCount` printable pages, where
 // page 1 has instructions and every page after that is intentionally blank.
+import { siteFooterLine } from '../siteConfig.js';
+
 export default {
-  key: 'trayfeed',
-  label: 'Tray Feed Stress Test',
+  key: 'trayfeed',  label: 'Tray Feed Stress Test',
   description: 'Feeds 2–100 sheets. Page 1 prints instructions; all subsequent pages are 100% blank.',
   icon: 'fa-copy',
   badge: { text: 'NEW!', className: 'bg-cyan-500 text-slate-950' },
@@ -63,7 +64,7 @@ export default {
             </div>
 
             <div class="border-t border-slate-300 pt-2 text-[10px] text-slate-500 font-mono flex justify-between">
-              <span>PAPERJAMMED.NET TRAY TEST</span>
+              ${siteFooterLine('TRAY TEST')}
               <span>TOTAL FEED: ${totalPages} SHEETS</span>
             </div>
           ` : `
