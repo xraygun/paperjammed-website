@@ -8,6 +8,7 @@ const state = {
   currentTemplateKey: 'jamRemover',
   jamPercent: 30,
   trayFeedCount: 5,
+  certTechName: '',
   isPrintIncrementing: false
 };
 
@@ -332,20 +333,27 @@ function handleTrayFeedChange(val) {
 }
 
 // ----------------------------------------------------------------------------
-// Custom technician note (shared across several templates)
+// Certificate installer name (dedicated control — see certificate.js)
+// ----------------------------------------------------------------------------
+function handleCertTechNameChange(val) {
+  state.certTechName = val;
+  const certTechEl = document.getElementById('certTechName');
+  if (certTechEl) {
+    certTechEl.textContent = (val.trim() !== '') ? val : '[ IT Department Staff ]';
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Custom technician note (shared across the remaining templates)
 // ----------------------------------------------------------------------------
 function updateCustomNote() {
   const inputVal = document.getElementById('customNote')?.value || '';
   const footnoteEl = document.getElementById('printedFootnote');
-  const certTechEl = document.getElementById('certTechName');
   const ghostTechEl = document.getElementById('ghostTechName');
   const kissTechEl = document.getElementById('kissTechName');
 
   if (footnoteEl) {
     footnoteEl.innerText = (inputVal.trim() !== '') ? inputVal : 'IT Print Verification Completed. Do not discard unless Chuck Norris says so.';
-  }
-  if (certTechEl) {
-    certTechEl.innerText = (inputVal.trim() !== '') ? inputVal : '[ IT Department Staff ]';
   }
   if (ghostTechEl) {
     ghostTechEl.innerText = (inputVal.trim() !== '') ? inputVal : 'Tech Dave (Ghost-Buster)';
@@ -371,6 +379,7 @@ function initApp() {
 window.setTemplate = setTemplate;
 window.handleJamSliderChange = handleJamSliderChange;
 window.handleTrayFeedChange = handleTrayFeedChange;
+window.handleCertTechNameChange = handleCertTechNameChange;
 window.updateCustomNote = updateCustomNote;
 window.handlePrintAction = handlePrintAction;
 
