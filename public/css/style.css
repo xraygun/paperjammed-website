@@ -63,6 +63,25 @@
     page-break-after: avoid !important;
     break-after: avoid !important;
   }
+
+  /* Flex items default to a "min-height: auto" floor equal to their own
+     content's natural size — even inside a fixed-height, overflow:hidden
+     ancestor. That lets a template's actual content silently demand more
+     height than the one-page box provides; the print engine paginates
+     based on that demand and spawns a second (often mostly-blank) page,
+     even though .print-area would otherwise clip the overflow from view.
+     Setting overflow:hidden directly on these flex items resets their
+     automatic minimum size to 0 (per the flexbox spec), letting them
+     actually shrink to fit instead of pushing the page taller. This is
+     the single choke point every template renders through, so it fixes
+     the issue site-wide without touching individual template files. */
+  #templateContent,
+  #globalFooterContainer,
+  .print-area .flex-1,
+  .print-page .flex-1 {
+    overflow: hidden !important;
+    min-height: 0 !important;
+  }
 }
 
 .font-dotmatrix {
