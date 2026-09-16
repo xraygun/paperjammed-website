@@ -9,6 +9,9 @@ const state = {
   jamPercent: 30,
   trayFeedCount: 5,
   certTechName: '',
+  orderAnimal: '',
+  orderRecipient: '',
+  orderAddress: '',
   isPrintIncrementing: false
 };
 
@@ -344,6 +347,33 @@ function handleCertTechNameChange(val) {
 }
 
 // ----------------------------------------------------------------------------
+// Mail Order Livestock animal name (dedicated control — see invoice.js)
+// Unlike the certificate's installer name (which updates one element), the
+// animal name appears throughout the receipt, so the template is re-rendered.
+// ----------------------------------------------------------------------------
+function renderInvoiceIfActive() {
+  if (state.currentTemplateKey === 'invoice') {
+    const contentEl = document.getElementById('templateContent');
+    if (contentEl) contentEl.innerHTML = templates.invoice.render(state);
+  }
+}
+
+function handleOrderAnimalChange(val) {
+  state.orderAnimal = val;
+  renderInvoiceIfActive();
+}
+
+function handleOrderRecipientChange(val) {
+  state.orderRecipient = val;
+  renderInvoiceIfActive();
+}
+
+function handleOrderAddressChange(val) {
+  state.orderAddress = val;
+  renderInvoiceIfActive();
+}
+
+// ----------------------------------------------------------------------------
 // Custom technician note (shared across the remaining templates)
 // ----------------------------------------------------------------------------
 function updateCustomNote() {
@@ -380,6 +410,9 @@ window.setTemplate = setTemplate;
 window.handleJamSliderChange = handleJamSliderChange;
 window.handleTrayFeedChange = handleTrayFeedChange;
 window.handleCertTechNameChange = handleCertTechNameChange;
+window.handleOrderAnimalChange = handleOrderAnimalChange;
+window.handleOrderRecipientChange = handleOrderRecipientChange;
+window.handleOrderAddressChange = handleOrderAddressChange;
 window.updateCustomNote = updateCustomNote;
 window.handlePrintAction = handlePrintAction;
 
