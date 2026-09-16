@@ -1,0 +1,150 @@
+/* Browser print configuration: margin 0 disables native header/footer (URL, date, page numbers) */
+@page {
+  size: portrait;
+  margin: 0;
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .no-print {
+    display: none !important;
+  }
+  /* The print sheet is nested inside layout wrappers (body.min-h-screen >
+     grid container with p-4/md:p-6 and gap-6 > main). Their padding, gaps
+     and min-height are screen-layout concerns, but they still contribute
+     real height in print — pushing the total past one page and producing a
+     spurious blank second page even when the template itself fits with
+     room to spare.
+
+     This is deliberately scoped to the ancestors ABOVE the print sheet
+     only. Do NOT broaden it (e.g. `body > div > div`) or add
+     `display: block` — #printSheet and the template markup inside it rely
+     on their own flex layout, and flattening that collapses the page. */
+  html, body {
+    min-height: 0 !important;
+    height: auto !important;
+  }
+  body > div {
+    padding: 0 !important;
+    margin: 0 !important;
+    gap: 0 !important;
+    max-width: none !important;
+    min-height: 0 !important;
+  }
+  body > div > main {
+    padding: 0 !important;
+    margin: 0 !important;
+    min-height: 0 !important;
+  }
+  .print-area {
+    /* Intentionally NOT forcing display:block here. #printSheet is a
+       Tailwind `flex flex-col justify-between` element, and single-page
+       templates rely on that flex layout to spread their content and the
+       shared footer across the full physical page. Forcing block layout
+       breaks that: content collapses to the top with a large blank gap
+       below, since block flow doesn't distribute leftover vertical space
+       the way flex-grow does. */
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 10mm !important;
+    box-sizing: border-box !important;
+    height: 98vh !important;
+    max-height: 98vh !important;
+    overflow: hidden !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+  /* Multi-page containers (Tray Feed & Certificate) break explicitly per page element.
+     display:block is safe (even preferable) here since each .print-page below has
+     its own forced height and doesn't need flex distribution from this parent. */
+  .print-area.multi-page-mode {
+    display: block !important;
+    padding: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+  .print-page {
+    page-break-after: always !important;
+    break-after: page !important;
+    height: 98vh !important;
+    max-height: 98vh !important;
+    box-sizing: border-box !important;
+    padding: 10mm !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+  }
+  .print-page:last-child {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* Flex items default to a "min-height: auto" floor equal to their own
+     content's natural size — even inside a fixed-height, overflow:hidden
+     ancestor. That lets a template's actual content silently demand more
+     height than the one-page box provides; the print engine paginates
+     based on that demand and spawns a second (often mostly-blank) page,
+     even though .print-area would otherwise clip the overflow from view.
+     Setting overflow:hidden directly on these flex items resets their
+     automatic minimum size to 0 (per the flexbox spec), letting them
+     actually shrink to fit instead of pushing the page taller. This is
+     the single choke point every template renders through, so it fixes
+     the issue site-wide without touching individual template files. */
+  #templateContent,
+  #globalFooterContainer,
+  .print-area .flex-1,
+  .print-page .flex-1 {
+    overflow: hidden !important;
+    min-height: 0 !important;
+  }
+
+  /* The single-page global footer used to rely on flex-grow (on
+     #templateContent) computing an exact remainder that sums to precisely
+     100vh. `vh` units combined with flex distribution are unreliable
+     across browsers for that kind of pixel-perfect math in print contexts
+     — the arithmetic can be off by enough to tip a page into a spurious
+     second page just to hold the footer. Pinning the footer with absolute
+     positioning against #printSheet's own box (which has a hard, fixed
+     height) sidesteps that arithmetic entirely: it's placed by
+     direct geometry, not by what's "left over" after content renders. */
+  #globalFooterContainer {
+    position: absolute !important;
+    left: 10mm !important;
+    right: 10mm !important;
+    bottom: 10mm !important;
+    margin: 0 !important;
+  }
+}
+
+.font-dotmatrix {
+  font-family: 'VT323', 'Courier New', monospace;
+}
+
+.font-serif-header {
+  font-family: 'Cinzel', 'Georgia', serif;
+}
+
+/* Anchors a template's site-URL footer line to the physical bottom of a
+   .print-page, ~1cm (10mm) up from the edge — regardless of how tall the
+   page's own content happens to be. The nearest ancestor with `position:
+   relative` (normally the .print-page div itself) must wrap this. */
+.page-footer-url {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 10mm;
+  text-align: center;
+  pointer-events: none;
+}
