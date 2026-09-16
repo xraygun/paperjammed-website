@@ -298,3 +298,228 @@ reference (the Office Space line in `pcloadletter.js`).
 - [ ] Registered in `templates/index.js` in all three places
 - [ ] Print-tested: fits one page, no blank second page
 - [ ] Tested on a deployed preview URL, not just localhost
+
+---
+---
+
+# PART TWO — TEMPLATE GENERATION SPEC
+
+> **Sections 1–10 above are project context** — for working on the repo itself.
+>
+> **This part is a self-contained brief for generating one new template file.**
+> You can paste this whole document into a fresh chat, or just Part Two on its
+> own, and say: *"Create a new template based on [idea], following this spec."*
+
+## Your deliverables
+
+When asked to create a template, produce exactly these, and nothing else:
+
+1. **One complete `.js` file** — saved to `public/js/templates/<key>.js`
+2. **The registry diff** for `public/js/templates/index.js` (three additions)
+3. **An `app.js` snippet — only if the template has interactive controls.**
+   Do not attempt to rewrite `app.js`; hand over the exact lines to paste.
+
+Do **not** modify `index.html`, `css/style.css`, or `calibrationBars.js`.
+
+## The contract
+
+```js
+export default {
+  key: 'myTemplate',            // REQUIRED. camelCase. Must equal the filename.
+  label: 'My Template',         // REQUIRED. Sidebar text.
+  description: 'One sentence.', // REQUIRED. Sidebar subtext.
+  icon: 'fa-flask',             // Font Awesome 6 solid name WITH fa- prefix, or null.
+  badge: { text: 'NEW', className: 'bg-cyan-500 text-slate-950' },  // or null
+  borderClasses: 'border-slate-700 hover:border-slate-500 bg-slate-800/50 hover:bg-slate-700/50',
+  radioAccent: 'accent-indigo-500',
+  labelTextClass: 'text-cyan-300',   // '' for plain white
+  configType: 'color',          // 'color' | 'bw' — which calibration bar shows
+  multiPage: false,             // true ONLY if render() emits .print-page divs
+
+  controlsHtml(state) { ... },  // OPTIONAL — see "Interactive controls" below
+  render(state) { ... }         // REQUIRED — returns the printed sheet as a string
+};
+```
+
+Helpers and lookup tables may be declared at module scope above
+`export default`. Keep them in the same file.
+
+## Hard rules
+
+1. **No `@page` or `@media print` rules.** Global print CSS already exists;
+   a second `@page` conflicts with it.
+2. **No `class="print-page"` when `multiPage: false`.** It forces `98vh` plus
+   `page-break-after: always` on a sheet that also receives the shared footer,
+   which reliably produces a blank second page. This is the single most common
+   failure.
+3. **No standalone print functions.** No `window.print()`, no hidden-iframe
+   printing, no `renderX(containerId)` helpers. The site owns printing and the
+   print counter. A template only describes what appears on the sheet.
+4. **`render()` and `controlsHtml()` must be pure.** No `document.getElementById`,
+   no side effects, no fetch, no async. Input comes from `state`, output is a
+   string.
+5. **Prefix custom CSS classes** with the template key (`.sb-header`, not
+   `.header`). Prefer Tailwind utilities — most templates use no custom CSS at
+   all. A raw `<style>` block inside the returned string works if needed.
+6. **Content must fit one page.** Roughly 5,000–6,000 characters of rendered
+   markup is the practical ceiling for a single-page template. If it overflows,
+   trim content rather than shrinking the page.
+7. **Escape free-form user input** before injecting it (see the address field in
+   `invoice.js`).
+8. **Keep it workplace-safe.** These print on shared office printers. No real
+   named public figures, no copyrighted lyrics or long quoted passages.
+
+## House style
+
+Templates look like industrial diagnostic printouts. Conventions in use:
+
+- `font-mono` throughout; `font-sans` only for deliberate contrast
+- Small type: `text-[9px]`, `text-[10px]`, `text-[11px]`, `text-xs`
+- Hard black rules: `border-b-2 border-black`, `border-2 border-slate-800`
+- `uppercase tracking-wider` / `tracking-widest` for headers and labels
+- Section markers like `§1 — INITIALIZATION SEQUENCE`
+- Boxed callouts: `border-l-4` accent bars, `bg-slate-50` panels
+- Fake precision: reference codes, timestamps, measured-vs-nominal tables,
+  version strings, `STATUS: OPTIMAL`
+
+## Interactive controls
+
+Only if the template needs user input. `controlsHtml(state)` returns HTML shown
+under the sidebar entry when the template is selected. Inputs use **inline
+handlers**, because `app.js` is a module and inline attributes can only reach
+globals:
+
+```html
+<input type="text" value="${state.myValue || ''}" oninput="handleMyValue(this.value)"
+  class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-100">
+```
+
+Then supply this `app.js` snippet as a separate deliverable:
+
+```js
+// 1. add to the `state` object at the top of app.js:
+myValue: '',
+
+// 2. add the handler:
+function renderMyTemplateIfActive() {
+  if (state.currentTemplateKey === 'myTemplate') {
+    const el = document.getElementById('templateContent');
+    if (el) el.innerHTML = templates.myTemplate.render(state);
+  }
+}
+
+function handleMyValue(val) {
+  state.myValue = val;
+  renderMyTemplateIfActive();
+}
+
+// 3. expose it near the other window.* lines at the bottom:
+window.handleMyValue = handleMyValue;
+```
+
+In `render()`, always give state a fallback:
+
+```js
+const v = (state.myValue && state.myValue.trim() !== '') ? state.myValue : '[ default ]';
+```
+
+**Names already taken** — do not reuse:
+`jamCoverage`, `jamFlavor`, `toastiness`, `splatterDensity`, `trayFeedCount`,
+`certTechName`, `orderAnimal`, `orderRecipient`, `orderAddress`,
+`currentTemplateKey`, `isPrintIncrementing`, and any `handle*` listed in §5.
+
+## Multi-page templates
+
+Set `multiPage: true`, wrap each physical page in `<div class="print-page">`,
+and add the site URL yourself:
+
+```js
+import { siteFooterLine } from '../siteConfig.js';
+// ...then inside render():
+${siteFooterLine('UNIT LABEL')}
+```
+
+The shared footer is hidden for multi-page templates. Don't add the footer to
+intentionally-blank filler pages.
+
+## Registry diff format
+
+Always deliver it in this shape:
+
+```
+// public/js/templates/index.js
+
+// 1. with the other imports:
+import myTemplate from './myTemplate.js';
+
+// 2. add to templateOrder (position = sidebar order):
+'myTemplate'
+
+// 3. add to the templates object:
+myTemplate
+```
+
+## Complete worked example
+
+A real, shipping template — the simplest one in the project. Match this shape.
+
+```js
+export default {
+  key: 'kiss',
+  label: 'K-I-S-S IT Checkbox',
+  description: 'Keep It Simple, Stupid. Minimal top header with check box to return to IT Dept.',
+  icon: 'fa-check-square',
+  badge: { text: 'INK SAVER', className: 'bg-emerald-500 text-slate-950' },
+  borderClasses: 'border-emerald-500/50 hover:border-emerald-400 bg-emerald-950/20 hover:bg-emerald-900/30',
+  radioAccent: 'accent-emerald-500',
+  labelTextClass: 'text-emerald-300',
+  configType: 'bw',
+  multiPage: false,
+
+  render() {
+    return `
+      <div class="font-mono text-slate-900 h-full flex flex-col justify-between py-2">
+        <div>
+          <div class="border-b-2 border-slate-900 pb-2 flex justify-between items-center text-xs">
+            <span class="font-bold uppercase tracking-wider">IT DEPT. QUICK TEST PAGE</span>
+            <span class="text-[10px] text-slate-500">REF: K-I-S-S PROTOCOL</span>
+          </div>
+
+          <div class="my-8 p-5 border-2 border-slate-900 rounded bg-slate-50 flex items-start gap-4">
+            <div class="w-7 h-7 border-2 border-slate-900 rounded-sm shrink-0 mt-0.5 bg-white"></div>
+            <div>
+              <p class="text-sm font-bold text-slate-900 leading-snug">
+                Please check box and return sheet to IT Department if test print is successful.
+              </p>
+              <p class="text-xs text-slate-600 mt-1">
+                Printer: <span id="kissTechName">[ System Default Printer ]</span> • Tested: ${new Date().toLocaleTimeString()}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-[10px] text-slate-400 text-center uppercase tracking-widest border-t border-dashed border-slate-300 pt-3">
+          [ MINIMAL INK CONSUMPTION TEST • KEEP IT SIMPLE, STUPID ]
+        </div>
+      </div>
+    `;
+  }
+};
+```
+
+Note: `render()` takes no argument here because this template reads no state.
+The `id="kissTechName"` opts it into the shared Technician Note field (§5).
+
+## Pre-delivery checklist
+
+- [ ] `key` equals the filename, camelCase
+- [ ] `icon` has the `fa-` prefix (or is `null`)
+- [ ] No `print-page` class if `multiPage: false`
+- [ ] No `@page`, `@media print`, or print functions
+- [ ] `render()` is pure and returns a string
+- [ ] Any handler referenced in `controlsHtml` is included in the app.js snippet
+      and exposed on `window`
+- [ ] No state-key or handler-name collisions with the lists above
+- [ ] State reads have fallbacks; free-form input is escaped
+- [ ] Registry diff included
+- [ ] Content is plausibly one page
