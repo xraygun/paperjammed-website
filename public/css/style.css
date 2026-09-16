@@ -21,22 +21,26 @@
      and min-height are screen-layout concerns, but they still contribute
      real height in print — pushing the total past one page and producing a
      spurious blank second page even when the template itself fits with
-     room to spare. Flatten them all to plain blocks with no spacing so the
-     .print-area is the only thing determining page height. */
+     room to spare.
+
+     This is deliberately scoped to the ancestors ABOVE the print sheet
+     only. Do NOT broaden it (e.g. `body > div > div`) or add
+     `display: block` — #printSheet and the template markup inside it rely
+     on their own flex layout, and flattening that collapses the page. */
   html, body {
     min-height: 0 !important;
     height: auto !important;
-    display: block !important;
   }
-  body > div,
-  body > div > main,
-  body > div > div {
-    display: block !important;
+  body > div {
     padding: 0 !important;
     margin: 0 !important;
     gap: 0 !important;
     max-width: none !important;
-    width: auto !important;
+    min-height: 0 !important;
+  }
+  body > div > main {
+    padding: 0 !important;
+    margin: 0 !important;
     min-height: 0 !important;
   }
   .print-area {
