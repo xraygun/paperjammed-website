@@ -38,7 +38,7 @@ export default {
           <span>Delivery Location:</span>
         </label>
         <textarea id="orderAddressInput" rows="3" oninput="handleOrderAddressChange(this.value)"
-          placeholder="Office Depot&#10;223 Hwy 17&#10;Thomasville, GA"
+          placeholder="Main Office&#10;223 Hwy 17&#10;Albuquerque, NM"
           class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-y">${state.orderAddress || ''}</textarea>
         <p class="text-[10px] text-slate-400 italic">One line per row — appears on the shipping block.</p>
       </div>
