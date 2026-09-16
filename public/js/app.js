@@ -6,7 +6,10 @@ const API_ENDPOINT = '/api/counter';
 
 const state = {
   currentTemplateKey: 'jamRemover',
-  jamPercent: 30,
+  jamCoverage: 35,
+  jamFlavor: 'strawberry',
+  toastiness: 'golden',
+  splatterDensity: 50,
   trayFeedCount: 5,
   certTechName: '',
   orderAnimal: '',
@@ -256,61 +259,45 @@ function setTemplate(key) {
   const barEl = document.getElementById('calibrationBar');
   if (barEl) barEl.innerHTML = calibrationBars[t.configType || 'color'];
 
-  if (key === 'jamRemover') updateJamGraphic(state.jamPercent);
   updateCustomNote();
 }
 
 // ----------------------------------------------------------------------------
-// Jam Remover slider
+// Jam Remover 2.0 controls
+//
+// v2.0 builds its whole SVG (blotch, drips, seeds, splatter, toast shade)
+// inside render(), so there are no individual elements to patch the way the
+// old version poked at #jamBlotch. Every control just updates state and
+// re-renders the sheet. The controls themselves live in the sidebar and are
+// rendered once, so re-rendering templateContent leaves them untouched.
 // ----------------------------------------------------------------------------
-function updateJamGraphic(val) {
-  const jamBlotch = document.getElementById('jamBlotch');
-  const reportPercent = document.getElementById('reportPercent');
-  const jamFlavor = document.getElementById('jamFlavor');
-  const jamConsistency = document.getElementById('jamConsistency');
-  const jamRemaining = document.getElementById('jamRemaining');
-
-  if (reportPercent) reportPercent.textContent = val;
-
-  if (jamBlotch) {
-    const rX = (val / 100) * 52;
-    const rY = (val / 100) * 58;
-
-    if (val == 0) {
-      jamBlotch.setAttribute('d', 'M 100 105 Z');
-    } else {
-      jamBlotch.setAttribute('d',
-        `M ${100 - rX},105 ` +
-        `C ${100 - rX},${105 - rY * 0.9} ${100 + rX * 1.1},${105 - rY * 0.85} ${100 + rX},105 ` +
-        `C ${100 + rX * 1.15},${105 + rY * 1.05} ${100 - rX * 0.85},${105 - rY * 1.15} ${100 - rX},105 Z`
-      );
-    }
-  }
-
-  if (val == 0) {
-    if (jamFlavor) jamFlavor.textContent = 'None Detected (Clean Paper Feed)';
-    if (jamConsistency) jamConsistency.textContent = 'Dry / Pure Mechanical Friction';
-    if (jamRemaining) jamRemaining.textContent = '100% trapped deep inside fuser gears';
-  } else if (val <= 35) {
-    if (jamFlavor) jamFlavor.textContent = "Smucker's Concord Grape (Industrial)";
-    if (jamConsistency) jamConsistency.textContent = 'Sticky & Semi-Viscous Gelatin';
-    if (jamRemaining) jamRemaining.textContent = `${100 - val}% remaining in roller mechanisms`;
-  } else if (val <= 70) {
-    if (jamFlavor) jamFlavor.textContent = 'Artisanal Seeded Raspberry Jam';
-    if (jamConsistency) jamConsistency.textContent = 'Grit-Infused Hydraulic Sludge';
-    if (jamRemaining) jamRemaining.textContent = `${100 - val}% remaining on rubber feed tires`;
-  } else {
-    if (jamFlavor) jamFlavor.textContent = 'High-Fructose Synthetic Marmalade';
-    if (jamConsistency) jamConsistency.textContent = 'Crystalline Epoxy-Level Tarry Compound';
-    if (jamRemaining) jamRemaining.textContent = `${100 - val}% remaining (Hardware virtually cleared!)`;
+function renderJamIfActive() {
+  if (state.currentTemplateKey === 'jamRemover') {
+    const contentEl = document.getElementById('templateContent');
+    if (contentEl) contentEl.innerHTML = templates.jamRemover.render(state);
   }
 }
 
 function handleJamSliderChange(val) {
-  state.jamPercent = val;
+  state.jamCoverage = parseInt(val, 10) || 0;
   const displayEl = document.getElementById('sliderValDisplay');
-  if (displayEl) displayEl.textContent = val;
-  updateJamGraphic(val);
+  if (displayEl) displayEl.textContent = state.jamCoverage;
+  renderJamIfActive();
+}
+
+function handleJamFlavorChange(val) {
+  state.jamFlavor = val;
+  renderJamIfActive();
+}
+
+function handleToastinessChange(val) {
+  state.toastiness = val;
+  renderJamIfActive();
+}
+
+function handleSplatterChange(val) {
+  state.splatterDensity = parseInt(val, 10) || 0;
+  renderJamIfActive();
 }
 
 // ----------------------------------------------------------------------------
@@ -408,6 +395,9 @@ function initApp() {
 // Expose the handlers referenced by inline HTML attributes (onclick/oninput)
 window.setTemplate = setTemplate;
 window.handleJamSliderChange = handleJamSliderChange;
+window.handleJamFlavorChange = handleJamFlavorChange;
+window.handleToastinessChange = handleToastinessChange;
+window.handleSplatterChange = handleSplatterChange;
 window.handleTrayFeedChange = handleTrayFeedChange;
 window.handleCertTechNameChange = handleCertTechNameChange;
 window.handleOrderAnimalChange = handleOrderAnimalChange;
