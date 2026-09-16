@@ -49,9 +49,7 @@ export default {
           <p class="text-[10px] leading-relaxed text-slate-800">
             Drum photoconductor lattice was interrogated across 4,096 discrete sample vectors; dielectric bias drift
             remains asymptotically flat through the sixth harmonic. The fuser's ambifacient lunar slip-ring was
-            de-gaussed, re-gaussed, and then — out of an abundance of caution — gaussed once more. Toner electrostatic
-            cling coefficient now tracks the reference curve to within four decimal places, which the manufacturer
-            describes as "probably fine."
+            de-gaussed, re-gaussed, and then — out of an abundance of caution — gaussed once more.
           </p>
         </div>
 
@@ -86,18 +84,6 @@ export default {
                 <td class="py-0.5 px-1.5">1,140 RPM</td>
                 <td class="py-0.5 px-1.5 font-bold">PASS</td>
               </tr>
-              <tr class="border-b border-slate-200">
-                <td class="py-0.5 px-1.5">Pentametric Fan Array</td>
-                <td class="py-0.5 px-1.5">37.4 dBA</td>
-                <td class="py-0.5 px-1.5">38.0 dBA</td>
-                <td class="py-0.5 px-1.5 font-bold">PASS</td>
-              </tr>
-              <tr class="border-b border-slate-200">
-                <td class="py-0.5 px-1.5">Paper Path Sproggle Valve</td>
-                <td class="py-0.5 px-1.5">SEATED</td>
-                <td class="py-0.5 px-1.5">SEATED</td>
-                <td class="py-0.5 px-1.5 font-bold">PASS</td>
-              </tr>
               <tr>
                 <td class="py-0.5 px-1.5">Girdle-Spring Nurnie (Aft)</td>
                 <td class="py-0.5 px-1.5">WOBBLING</td>
@@ -113,7 +99,6 @@ export default {
           <p class="font-bold text-[10px] uppercase tracking-wider border-b border-slate-400 pb-1 mb-1.5">§4 — ADVISORY NOTES</p>
           <ul class="text-[10px] leading-relaxed text-slate-800 space-y-0.5 pl-4 list-disc">
             <li>Aft girdle-spring nurnie exhibits non-critical wobble. Wobble has been reclassified as a feature.</li>
-            <li>Do not percuss the chassis to resolve faults. If percussion is unavoidable, log it in the maintenance ledger.</li>
             <li>Residual quantum indeterminacy may cause the page counter to disagree with itself. This is expected.</li>
             <li>Recalibration is advised every 90 days, or immediately following any unexplained humming.</li>
           </ul>
