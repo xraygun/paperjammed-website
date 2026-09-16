@@ -31,8 +31,8 @@
     margin: 0 !important;
     padding: 10mm !important;
     box-sizing: border-box !important;
-    height: 90vh !important;
-    max-height: 100vh !important;
+    height: 98vh !important;
+    max-height: 98vh !important;
     overflow: hidden !important;
     page-break-after: avoid !important;
     break-after: avoid !important;
@@ -52,8 +52,8 @@
   .print-page {
     page-break-after: always !important;
     break-after: page !important;
-    height: 100vh !important;
-    max-height: 100vh !important;
+    height: 98vh !important;
+    max-height: 98vh !important;
     box-sizing: border-box !important;
     padding: 10mm !important;
     margin: 0 !important;
@@ -90,7 +90,7 @@
      — the arithmetic can be off by enough to tip a page into a spurious
      second page just to hold the footer. Pinning the footer with absolute
      positioning against #printSheet's own box (which has a hard, fixed
-     100vh height) sidesteps that arithmetic entirely: it's placed by
+     height) sidesteps that arithmetic entirely: it's placed by
      direct geometry, not by what's "left over" after content renders. */
   #globalFooterContainer {
     position: absolute !important;
