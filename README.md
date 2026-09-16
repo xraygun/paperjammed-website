@@ -1,3 +1,5 @@
+
+
 # PaperJammed.net
 
 ## Structure
@@ -77,3 +79,4 @@ pick it up automatically — `index.html` and `app.js` never need to change.
   note too.
 - Print CSS (`@page`, `.print-area`, `.print-page`, multi-page mode) is
   unchanged in `css/style.css`.
+  
