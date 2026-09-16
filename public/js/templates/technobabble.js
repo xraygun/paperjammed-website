@@ -47,8 +47,7 @@ export default {
         <div>
           <p class="font-bold text-[10px] uppercase tracking-wider border-b border-slate-400 pb-1 mb-1.5">§2 — SUB-SYSTEM VERIFICATION</p>
           <p class="text-[10px] leading-relaxed text-slate-800">
-            Drum photoconductor lattice was interrogated across 4,096 discrete sample vectors; dielectric bias drift
-            remains asymptotically flat through the sixth harmonic. The fuser's ambifacient lunar slip-ring was
+            The fuser's ambifacient lunar slip-ring was
             de-gaussed, re-gaussed, and then — out of an abundance of caution — gaussed once more.
           </p>
         </div>
