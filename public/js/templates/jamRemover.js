@@ -229,11 +229,11 @@ function renderBreadGraphicSvg(coverage, toastKey = 'golden', flavorKey = 'straw
 
 export default {
   key: 'jamRemover',
-  label: 'Printer Jam Remover 2.0 (Pro)',
+  label: 'Printer Jam Remover 2.0',
   description: 'Pro printer jam extraction tool! Customizable toast crispness, viscous jam flavors, drippings & IT metrics.',
   icon: 'fa-bread-slice',
   badge: {
-    text: 'v2.0 PRO',
+    text: 'New And Improved Flavor',
     className: 'bg-gradient-to-r from-rose-500 to-amber-500 text-white font-extrabold shadow-sm'
   },
   borderClasses: 'border-rose-500/50 hover:border-rose-400 bg-rose-950/20 hover:bg-rose-900/30',
@@ -306,7 +306,7 @@ export default {
         </div>
 
         <div class="flex items-center justify-between text-[10px] text-slate-300 italic pt-1 border-t border-rose-900/50">
-          <span>Jam 2.0 Pro: Cleans hardware rollers with sticky simulations.</span>
+          <span>Jam 2.0: Cleans hardware rollers with sticky simulations.</span>
         </div>
       </div>
     `;
@@ -342,7 +342,7 @@ export default {
           <div class="bg-slate-900 text-white p-3 text-center rounded-sm uppercase tracking-widest font-black text-base border-b-4 border-rose-600 mb-3 shadow-sm flex items-center justify-between px-4">
             <span class="flex items-center gap-2">
               <i class="fa-solid fa-triangle-exclamation text-rose-500"></i>
-              <span>PRINTER JAM REMOVER v2.0 PRO</span>
+              <span>PRINTER JAM REMOVER 2.0</span>
             </span>
             <span class="text-xs bg-rose-600 text-white px-2 py-0.5 rounded font-mono font-normal">
               DIAGNOSTIC PASS
@@ -429,7 +429,7 @@ export default {
           </div>
 
           <div class="text-right text-[10px] text-slate-500">
-            <p>Page 1 of 1 • Jam 2.0 Pro</p>
+            <p>Page 1 of 1 • Jam 2.0</p>
             <p id="jamTimestampDisplay">${timestamp}</p>
           </div>
         </div>
