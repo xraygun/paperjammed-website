@@ -4,7 +4,8 @@
 import { siteFooterLine } from '../siteConfig.js';
 
 export default {
-  key: 'trayfeed',  label: 'Tray Feed Stress Test',
+  key: 'trayfeed',
+  label: 'Tray Feed Stress Test',
   description: 'Feeds 2–100 sheets. Page 1 prints instructions; all subsequent pages are 100% blank.',
   icon: 'fa-copy',
   badge: { text: 'NEW!', className: 'bg-cyan-500 text-slate-950' },
@@ -46,6 +47,9 @@ export default {
 
     for (let i = 1; i <= totalPages; i++) {
       const isFirst = i === 1;
+      // Decorative edges (border, rounding, the dashed separator between pages)
+      // are screen-only via `print:` variants, so blank pages reach the paper
+      // with nothing on them at all.
       pagesHtml += `
         <div class="print-page bg-white p-6 border border-slate-200 rounded-sm min-h-[980px] flex flex-col justify-between ${i < totalPages ? 'border-b-4 border-b-dashed border-slate-400 mb-8' : ''}">
           ${isFirst ? `
