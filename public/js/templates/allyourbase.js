@@ -129,11 +129,11 @@ export default {
               <span class="ayb-speaker">CATS:</span>
               <span>How are you gentlemen !!</span>
             </div>
-            <div class="ayb-dialogue-line font-bold text-base my-2 pl-4 border-l-4 border-black">
+            <div class="ayb-dialogue-line font-bold text-base my-2">
               <span class="ayb-speaker">CATS:</span>
               <span>ALL YOUR BASE ARE BELONG TO US.</span>
             </div>
-            <div class="ayb-dialogue-line pl-4">
+            <div class="ayb-dialogue-line">
               <span class="ayb-speaker">CATS:</span>
               <span>You are on the way to destruction.</span>
             </div>
@@ -141,11 +141,11 @@ export default {
               <span class="ayb-speaker">CAPTAIN:</span>
               <span>What you say !!</span>
             </div>
-            <div class="ayb-dialogue-line pl-4">
+            <div class="ayb-dialogue-line">
               <span class="ayb-speaker">CATS:</span>
               <span>You have no chance to survive make your time.</span>
             </div>
-            <div class="ayb-dialogue-line pl-4">
+            <div class="ayb-dialogue-line">
               <span class="ayb-speaker">CATS:</span>
               <span>Ha Ha Ha Ha ...</span>
             </div>
@@ -170,11 +170,6 @@ export default {
               <span>For great justice.</span>
             </div>
           </div>
-        </div>
-
-        <div class="ayb-box">
-          <div class="ayb-subhead">FIELD TECHNICIAN NOTES</div>
-          <div class="text-sm font-mono min-h-[30px]" id="printedFootnote"></div>
         </div>
 
         <div class="ayb-code-block font-mono">
