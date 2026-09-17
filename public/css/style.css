@@ -85,6 +85,12 @@
     padding: 10mm !important;
     margin: 0 !important;
     overflow: hidden !important;
+    /* Screen shows a page outline + rounding + a dashed separator between
+       pages so the preview reads as distinct sheets. On paper those are
+       decorative only, and a light border prints as a visible grey line at
+       the bottom of otherwise-blank pages (Tray Feed). Strip them here. */
+    border: none !important;
+    border-radius: 0 !important;
   }
   .print-page:last-child {
     page-break-after: avoid !important;
