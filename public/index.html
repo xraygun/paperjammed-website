@@ -4,25 +4,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <!-- Primary Meta Tags -->
-  <title>PaperJammed.net - Sarcastic Printer Diagnostic Tool</title>
-  <meta name="title" content="PaperJammed.net - Sarcastic Printer Diagnostic Tool">
-  <meta name="description" content="Diagnose your printer errors with a heavy dose of sarcasm. Because PC LOAD LETTER deserves an attitude back.">
+<!-- Primary Meta Tags -->
+<title>PaperJammed.net | Funny & Sarcastic Printer Test Pages</title>
+<meta name="title" content="PaperJammed.net | Funny & Sarcastic Printer Test Pages">
+<meta name="description" content="Stop printing boring test sheets that go straight into the trash. Print sarcastic, IT-approved test pages with error pranks and CMYK color calibration bars.">
+<link rel="canonical" href="https://paperjammed.net/">
 
-  <!-- Open Graph / Facebook / Slack / Discord -->
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://paperjammed.net/">
-  <meta property="og:site_name" content="PaperJammed">
-  <meta property="og:title" content="PaperJammed.net - Sarcastic Printer Diagnostic Tool">
-  <meta property="og:description" content="Diagnose your printer errors with a heavy dose of sarcasm. Because PC LOAD LETTER deserves an attitude back.">
-  <meta property="og:image" content="https://paperjammed.net/assets/og-image.png">
+<!-- Open Graph / Facebook / Discord / Slack -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://paperjammed.net/">
+<meta property="og:site_name" content="PaperJammed">
+<meta property="og:title" content="PaperJammed.net | Funny & Sarcastic Printer Test Pages">
+<meta property="og:description" content="Stop printing boring test sheets that go straight into the trash. Print sarcastic, IT-approved test pages with error pranks and CMYK color calibration bars.">
+<meta property="og:image" content="https://paperjammed.net/assets/og-image.png">
 
-  <!-- Twitter / X -->
-  <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="https://paperjammed.net/">
-  <meta property="twitter:title" content="PaperJammed.net - Sarcastic Printer Diagnostic Tool">
-  <meta property="twitter:description" content="Diagnose your printer errors with a heavy dose of sarcasm. Because PC LOAD LETTER deserves an attitude back.">
-  <meta property="twitter:image" content="https://paperjammed.net/assets/og-image.png">
+<!-- Twitter / X -->
+<meta property="twitter:card" content="summary_large_image">
+<meta property="twitter:url" content="https://paperjammed.net/">
+<meta property="twitter:title" content="PaperJammed.net | Funny & Sarcastic Printer Test Pages">
+<meta property="twitter:description" content="Stop printing boring test sheets that go straight into the trash. Print sarcastic, IT-approved test pages with error pranks and CMYK color calibration bars.">
+<meta property="twitter:image" content="https://paperjammed.net/assets/og-image.png">
 
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🖨️</text></svg>">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -150,13 +151,29 @@
     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
       <p>PaperJammed.net — More updates on the way!</p>
       <p>
-        Contact: 
-        <a href="mailto:paperjammedadmin@gmail.com" class="text-rose-400 hover:text-rose-300 underline transition-colors">
-          paperjammedadmin@gmail.com
-        </a>
+        Contact:
+        <!-- Address is assembled in JS at load so it isn't sitting in the raw
+             HTML for basic scrapers. The parts are split and reversed as a
+             small extra hurdle. Falls back to a plain prompt if JS is off. -->
+        <a id="contactLink" href="#" class="text-rose-400 hover:text-rose-300 underline transition-colors">email us</a>
       </p>
     </div>
   </footer>
+
+  <!-- Contact link: assembled at runtime so the address isn't in the static
+       HTML. Parts are stored split + reversed; a scraper that only reads HTML
+       (most do) never sees a complete address. -->
+  <script>
+    (function () {
+      var a = document.getElementById('contactLink');
+      if (!a) return;
+      var user = ['demmajrepap', 'nimda'].map(function (s) { return s.split('').reverse().join(''); }).join('');
+      var domain = 'gmail.com';
+      var addr = user + '@' + domain;
+      a.href = 'mailto:' + addr;
+      a.textContent = addr;
+    })();
+  </script>
 
   <!-- APP LOGIC (ES module, imports the template registry) -->
   <script type="module" src="js/app.js"></script>
