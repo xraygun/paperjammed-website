@@ -152,28 +152,15 @@
       <p>PaperJammed.net — More updates on the way!</p>
       <p>
         Contact:
-        <!-- Address is assembled in JS at load so it isn't sitting in the raw
-             HTML for basic scrapers. The parts are split and reversed as a
-             small extra hurdle. Falls back to a plain prompt if JS is off. -->
-        <a id="contactLink" href="#" class="text-rose-400 hover:text-rose-300 underline transition-colors">email us</a>
+        <!-- contact@paperjammed.net is a Cloudflare Email Routing alias, not
+             a personal inbox — it forwards to the real address on Cloudflare's
+             side. If it ever gets scraped/spammed, rotate or disable the
+             forwarding rule in the Cloudflare dashboard; nothing here needs
+             to change. -->
+        <a href="mailto:contact@paperjammed.net" class="text-rose-400 hover:text-rose-300 underline transition-colors">contact@paperjammed.net</a>
       </p>
     </div>
   </footer>
-
-  <!-- Contact link: assembled at runtime so the address isn't in the static
-       HTML. Parts are stored split + reversed; a scraper that only reads HTML
-       (most do) never sees a complete address. -->
-  <script>
-    (function () {
-      var a = document.getElementById('contactLink');
-      if (!a) return;
-      var user = ['demmajrepap', 'nimda'].map(function (s) { return s.split('').reverse().join(''); }).join('');
-      var domain = 'gmail.com';
-      var addr = user + '@' + domain;
-      a.href = 'mailto:' + addr;
-      a.textContent = addr;
-    })();
-  </script>
 
   <!-- APP LOGIC (ES module, imports the template registry) -->
   <script type="module" src="js/app.js"></script>

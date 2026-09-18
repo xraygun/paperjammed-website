@@ -8,6 +8,7 @@
 index.html                  Page shell — header, sidebar chrome, print area. No template markup lives here.
 css/style.css                Print rules + custom fonts (unchanged from before).
 js/app.js                    App logic: state, print counter, sidebar rendering, template switching.
+js/siteConfig.js             SITE_URL constant + siteFooterLine() helper for multi-page templates.
 js/calibrationBars.js        The two color/grayscale calibration swatch strips.
 js/templates/index.js        THE REGISTRY. Import a template here + add its key to templateOrder.
 js/templates/jamRemover.js   One file per prank template.
@@ -18,8 +19,10 @@ js/templates/certificate.js
 js/templates/pcloadletter.js
 js/templates/recipe.js
 js/templates/technobabble.js
+js/templates/allyourbase.js
 js/templates/alignment.js
 js/templates/invoice.js
+js/templates/spaceball.js
 ```
 
 No build step — it's plain ES modules, so you can open it with any static file
