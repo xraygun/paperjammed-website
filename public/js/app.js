@@ -14,8 +14,7 @@ const state = {
   certTechName: '',
   orderAnimal: '',
   orderRecipient: '',
-  orderAddress: '',
-  isPrintIncrementing: false
+  orderAddress: ''
 };
 
 // ----------------------------------------------------------------------------
@@ -90,9 +89,35 @@ async function loadPrintCount() {
   }
 }
 
+// Cooldown gate so a single print action (button click + the resulting
+// afterprint event, or someone hammering Ctrl+P / the print button) can only
+// bump the counter once every PRINT_COOLDOWN_MS. Persisted in localStorage
+// (not just in-memory) so it survives page reloads and covers real print
+// dialogs, which routinely stay open longer than a short in-memory lock
+// would.
+const PRINT_COOLDOWN_MS = 5000;
+const COOLDOWN_STORAGE_KEY = 'pj_last_increment_at';
+
+function isInCooldown() {
+  try {
+    const last = parseInt(localStorage.getItem(COOLDOWN_STORAGE_KEY) || '0', 10);
+    return Date.now() - last < PRINT_COOLDOWN_MS;
+  } catch (e) {
+    return false;
+  }
+}
+
+function markIncrementTime() {
+  try {
+    localStorage.setItem(COOLDOWN_STORAGE_KEY, String(Date.now()));
+  } catch (e) {
+    // ignore storage errors (e.g. private browsing)
+  }
+}
+
 function incrementCounter() {
-  if (state.isPrintIncrementing) return;
-  state.isPrintIncrementing = true;
+  if (isInCooldown()) return;
+  markIncrementTime();
 
   const currentVal = getLocalCount();
   const nextVal = currentVal + 1;
@@ -121,14 +146,12 @@ function incrementCounter() {
   } catch (e) {
     setSyncStatus(false);
   }
-
-  setTimeout(() => {
-    state.isPrintIncrementing = false;
-  }, 1500);
 }
 
+// The actual increment happens once, from the shared 'afterprint' listener
+// below — it fires for this button AND for native Ctrl+P/menu-triggered
+// prints, so counting here too would double-count this button's prints.
 function handlePrintAction() {
-  incrementCounter();
   window.print();
 }
 

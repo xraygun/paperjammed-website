@@ -182,8 +182,7 @@ positions are used directly.
 
 ```
 currentTemplateKey, jamCoverage, jamFlavor, toastiness, splatterDensity,
-trayFeedCount, certTechName, orderAnimal, orderRecipient, orderAddress,
-isPrintIncrementing
+trayFeedCount, certTechName, orderAnimal, orderRecipient, orderAddress
 ```
 
 ### Existing handlers on window
@@ -426,7 +425,7 @@ const v = (state.myValue && state.myValue.trim() !== '') ? state.myValue : '[ de
 **Names already taken** — do not reuse:
 `jamCoverage`, `jamFlavor`, `toastiness`, `splatterDensity`, `trayFeedCount`,
 `certTechName`, `orderAnimal`, `orderRecipient`, `orderAddress`,
-`currentTemplateKey`, `isPrintIncrementing`, and any `handle*` listed in §5.
+`currentTemplateKey`, and any `handle*` listed in §5.
 
 ## Multi-page templates
 
