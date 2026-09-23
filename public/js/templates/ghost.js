@@ -12,17 +12,17 @@ export default {
 
   render() {
     return `
-      <div class="border-4 border-black p-4 bg-slate-50 font-mono text-slate-900 h-full flex flex-col justify-between">
+      <div class="border-4 border-black p-3 bg-slate-50 font-mono text-slate-900 h-full flex flex-col justify-between">
         <div>
-          <div class="border-b-4 border-black pb-1.5 mb-2 text-center">
-            <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600 block">PARANORMAL HARDWARE PURGE PROTOCOL v4.1</span>
-            <h1 class="text-xl font-black uppercase tracking-widest text-slate-950 my-1">
+          <div class="border-b-4 border-black pb-1 mb-1.5 text-center">
+            <span class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-600 block">PARANORMAL HARDWARE PURGE PROTOCOL v4.1</span>
+            <h1 class="text-lg font-black uppercase tracking-widest text-slate-950 my-0.5 leading-tight">
               👻 GHOST-BUSTER SPECTRAL EXORCISM
             </h1>
-            <p class="text-xs italic text-slate-700">Official Certificate of Ectoplasmic Buffer Flush & Poltergeist Removal</p>
+            <p class="text-[10px] italic text-slate-700 leading-tight">Official Certificate of Ectoplasmic Buffer Flush & Poltergeist Removal</p>
           </div>
 
-          <div class="grid grid-cols-2 gap-2 mb-2 p-2 border border-slate-400 bg-white text-[10px]">
+          <div class="grid grid-cols-2 gap-1.5 mb-1.5 p-1.5 border border-slate-400 bg-white text-[9px] leading-tight">
             <div>
               <p><strong>EXORCIST:</strong> <span id="ghostTechName">Tech Dave (Ghost-Buster)</span></p>
               <p><strong>PORT PURGED:</strong> LPT1 / TCP:9100</p>
@@ -33,9 +33,9 @@ export default {
             </div>
           </div>
 
-          <div class="text-center my-2">
-            <div class="inline-block border-2 border-black p-2 bg-white rounded-full shadow-md">
-              <svg viewBox="0 0 120 120" width="70" height="70" class="mx-auto">
+          <div class="text-center my-1.5">
+            <div class="inline-block border-2 border-black p-1.5 bg-white rounded-full shadow-md">
+              <svg viewBox="0 0 120 120" width="52" height="52" class="mx-auto">
                 <circle cx="60" cy="60" r="54" fill="none" stroke="#000" stroke-width="2" stroke-dasharray="6 3"/>
                 <circle cx="60" cy="60" r="46" fill="none" stroke="#000" stroke-width="1.5"/>
                 <path d="M 60 14 L 100 90 L 20 38 L 100 38 L 20 90 Z" fill="none" stroke="#000" stroke-width="1.5"/>
@@ -44,14 +44,14 @@ export default {
                 <circle cx="66" cy="52" r="2" fill="#000"/>
               </svg>
             </div>
-            <span class="text-[9px] text-slate-500 block mt-1 font-bold">FIG 1.1: HARDWARE WARDING SIGIL</span>
+            <span class="text-[8px] text-slate-500 block mt-0.5 font-bold">FIG 1.1: HARDWARE WARDING SIGIL</span>
           </div>
 
-          <div class="my-2 border-2 border-black p-2 bg-white space-y-1">
-            <p class="font-bold uppercase text-[10px] tracking-wider text-center border-b border-black pb-1">
+          <div class="my-1.5 border-2 border-black p-1.5 bg-white space-y-0.5">
+            <p class="font-bold uppercase text-[9px] tracking-wider text-center border-b border-black pb-0.5">
               📜 INCANTATIO EXORCISMUS PRINTERIS (RECITE ALOUD):
             </p>
-            <p class="italic text-slate-900 text-[10px] text-center leading-snug font-serif">
+            <p class="italic text-slate-900 text-[9px] text-center leading-tight font-serif">
               "Exorcizo te, creatura spooleri, in nomine TCP/IP et Spiritus Driveris!<br>
               Abscede, demone jammius, ab hoc fuser assembly!<br>
               Requiescat in pace, O paper tray. Amen."
@@ -59,7 +59,7 @@ export default {
           </div>
         </div>
 
-        <div class="border-t-2 border-black pt-1.5 text-[10px] text-slate-800">
+        <div class="border-t-2 border-black pt-1 text-[9px] text-slate-800 leading-tight">
           <p><strong>PURGE SUMMARY:</strong> Phantom print jobs and rogue spooler demons permanently banished.</p>
         </div>
       </div>
