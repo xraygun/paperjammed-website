@@ -278,6 +278,23 @@ via PR also gives you a Revert button — pushing straight to `main` does not.
   files. If none appear, you are looking at an old deployment.
 - **Forgetting to commit after copying files in.** `git status` before assuming
   a push happened.
+- **Deploys silently stop after a merge.** Two independent ways this has
+  happened, both invisible until you go looking:
+  - The Workers Builds "Deploy command" (Settings → Build) got set to
+    `npx wrangler versions upload` instead of `npx wrangler deploy`. That
+    command only stages a new version and prints a preview URL — it never
+    promotes it to production traffic, so every merge "succeeds" in the
+    build log while the live site keeps serving whatever was deployed last.
+  - The Cloudflare "Workers and Pages" GitHub App lost repository access
+    (e.g. after disconnecting/reconnecting the integration), so pushes to
+    `main` stop triggering builds at all — no entry appears in
+    Deployments, manual or automatic. Fix on GitHub's side: Settings →
+    Applications → Installed GitHub Apps → Cloudflare Workers and Pages →
+    Configure → make sure `paperjammed-website` is in the repository
+    access list, not just the Cloudflare side.
+  - If a change isn't showing up, check both before assuming the code is
+    wrong: Deployments tab for a recent build matching your commit, and
+    that its deploy command actually promoted to production.
 
 ## 9. Content guidelines
 
