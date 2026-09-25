@@ -12,7 +12,7 @@ export default {
 
   render() {
     return `
-      <div class="border-4 border-black p-3 bg-slate-50 font-mono text-slate-900 h-full flex flex-col justify-between">
+      <div class="border-4 border-black p-3 bg-slate-50 font-mono text-slate-900">
         <div>
           <div class="border-b-4 border-black pb-1 mb-1.5 text-center">
             <span class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-600 block">PARANORMAL HARDWARE PURGE PROTOCOL v4.1</span>
@@ -59,7 +59,7 @@ export default {
           </div>
         </div>
 
-        <div class="border-t-2 border-black pt-1 text-[9px] text-slate-800 leading-tight">
+        <div class="border-t-2 border-black mt-2 pt-1 text-[9px] text-slate-800 leading-tight">
           <p><strong>PURGE SUMMARY:</strong> Phantom print jobs and rogue spooler demons permanently banished.</p>
         </div>
       </div>
