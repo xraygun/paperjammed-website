@@ -306,7 +306,10 @@ via PR also gives you a Revert button — pushing straight to `main` does not.
   looks identical to "nothing happened" from the PR side. Fix: set it to
   `npx wrangler versions upload` (the correct command for previews —
   stages a version and gives a preview URL without touching production
-  traffic, unlike `wrangler deploy`).
+  traffic, unlike `wrangler deploy`). This field has silently failed to
+  actually save on the first attempt before — after changing it,
+  reload the settings page and confirm the new value is still there
+  before assuming a fresh build will pick it up.
 
 ## 9. Content guidelines
 
