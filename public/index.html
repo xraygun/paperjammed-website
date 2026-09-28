@@ -33,10 +33,32 @@
   <link href="https://fonts.googleapis.com/css2?family=VT323&family=Cinzel:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col">
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col max-lg:h-dvh max-lg:min-h-0 max-lg:overflow-hidden">
+
+  <!-- MOBILE-ONLY NOTICE (No Print) -->
+  <div id="mobileBanner" class="no-print lg:hidden max-lg:shrink-0 bg-amber-500/15 border-b border-amber-500/30 text-amber-200 text-[11px] text-center py-1.5 px-4 flex items-center justify-center gap-2">
+    <i class="fa-solid fa-display text-amber-400"></i>
+    <span>This site is best viewed on a computer or laptop.</span>
+    <button id="mobileBannerDismiss" aria-label="Dismiss notice" class="text-amber-300/70 hover:text-amber-100 text-sm leading-none px-1">&#10005;</button>
+  </div>
+  <script>
+    (function () {
+      var KEY = 'pj_mobile_banner_dismissed';
+      var banner = document.getElementById('mobileBanner');
+      if (!banner) return;
+      try {
+        if (localStorage.getItem(KEY) === '1') { banner.remove(); return; }
+      } catch (e) {}
+      var btn = document.getElementById('mobileBannerDismiss');
+      if (btn) btn.addEventListener('click', function () {
+        banner.remove();
+        try { localStorage.setItem(KEY, '1'); } catch (e) {}
+      });
+    })();
+  </script>
 
   <!-- TOP HEADER (No Print) -->
-  <header class="no-print bg-slate-800 border-b border-slate-700 p-4 sticky top-0 z-50 shadow-md">
+  <header class="no-print bg-slate-800 border-b border-slate-700 p-4 sticky top-0 z-50 shadow-md max-lg:shrink-0">
     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
       <div class="flex items-center gap-3">
         <div class="p-2.5 bg-rose-600 rounded-lg text-white font-bold text-xl shadow-lg shadow-rose-900/40">
@@ -68,10 +90,13 @@
   </header>
 
   <!-- MAIN BODY LAYOUT -->
-  <div class="max-w-7xl mx-auto w-full flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+  <div class="max-w-7xl mx-auto w-full flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 max-lg:flex max-lg:flex-col max-lg:min-h-0 max-lg:overflow-hidden max-lg:gap-0 max-lg:px-4 max-lg:py-2">
 
     <!-- SIDEBAR / CONTROLS (No Print) -->
-    <aside class="no-print lg:col-span-4 flex flex-col gap-6 order-2 lg:order-none">
+    <!-- On mobile this whole pane scrolls independently (max-lg:overflow-y-auto)
+         so the template list, customization box and info blurb are always
+         reachable without leaving the preview pane above. -->
+    <aside class="no-print lg:col-span-4 flex flex-col gap-6 order-2 lg:order-none max-lg:flex-1 max-lg:min-h-0 max-lg:overflow-y-auto max-lg:border-t max-lg:border-slate-700 max-lg:pt-4 max-lg:mt-2">
 
       <!-- Template Selector -->
       <div class="bg-slate-800 rounded-xl p-5 border border-slate-700 shadow-sm">
@@ -107,47 +132,55 @@
     </aside>
 
     <!-- MAIN PREVIEW CANVAS (Print Area) -->
-    <main class="lg:col-span-8 flex flex-col items-center order-1 lg:order-none">
+    <main class="lg:col-span-8 flex flex-col items-center order-1 lg:order-none max-lg:flex-1 max-lg:min-h-0">
 
-      <div class="no-print w-full flex justify-between items-center mb-3">
+      <div class="no-print w-full flex justify-between items-center mb-3 max-lg:shrink-0">
         <span class="text-sm text-slate-400 font-medium flex items-center gap-2">
           <i class="fa-solid fa-eye text-slate-500"></i> Page Preview (A4 / Letter)
         </span>
       </div>
 
-      <!-- PRINT SHEET CONTAINER -->
-      <div id="printSheet" class="print-area relative bg-white text-slate-900 p-6 md:p-8 shadow-2xl rounded-sm w-full max-w-[800px] min-h-[980px] flex flex-col justify-between font-mono text-xs border border-slate-200">
+      <!-- Scroll region for the sheet itself. `lg:contents` makes this a
+           no-op at desktop (printSheet becomes a direct flex child of
+           <main> again, exactly like before) — the independent-scroll
+           behavior only exists below the lg breakpoint. -->
+      <div class="w-full max-lg:flex-1 max-lg:min-h-0 max-lg:overflow-y-auto max-lg:pb-4 lg:contents">
+        <!-- PRINT SHEET CONTAINER -->
+        <div id="printSheet" class="print-area relative bg-white text-slate-900 p-6 md:p-8 shadow-2xl rounded-sm w-full max-w-[800px] min-h-[980px] flex flex-col justify-between font-mono text-xs border border-slate-200">
 
-        <!-- CONTENT INJECTED DYNAMICALLY VIA JS -->
-        <div id="templateContent" class="flex-1 flex flex-col justify-between">
-          <!-- Loaded in JS -->
-        </div>
+          <!-- CONTENT INJECTED DYNAMICALLY VIA JS -->
+          <div id="templateContent" class="flex-1 flex flex-col justify-between">
+            <!-- Loaded in JS -->
+          </div>
 
-        <!-- FOOTER / CMYK OR GRAYSCALE BAR / CUSTOM NOTE -->
-        <div id="globalFooterContainer" class="mt-6 pt-3 border-t border-slate-300">
-          <div class="flex justify-between items-end">
-            <div>
-              <p class="font-bold text-[11px] text-slate-800 uppercase tracking-wider">SYSTEM DIAGNOSTIC COMPLETION STATUS: <span class="text-slate-900">SUCCESS</span></p>
-              <p id="printedFootnote" class="text-[10px] text-slate-600 italic">IT Print Verification Completed. Do not discard unless Chuck Norris says so.</p>
+          <!-- FOOTER / CMYK OR GRAYSCALE BAR / CUSTOM NOTE -->
+          <div id="globalFooterContainer" class="mt-6 pt-3 border-t border-slate-300">
+            <div class="flex justify-between items-end">
+              <div>
+                <p class="font-bold text-[11px] text-slate-800 uppercase tracking-wider">SYSTEM DIAGNOSTIC COMPLETION STATUS: <span class="text-slate-900">SUCCESS</span></p>
+                <p id="printedFootnote" class="text-[10px] text-slate-600 italic">IT Print Verification Completed. Do not discard unless Chuck Norris says so.</p>
+              </div>
+              <div class="text-right">
+                <span id="siteUrlLabel" class="text-[9px] text-slate-400 font-sans font-bold block"></span>
+              </div>
             </div>
-            <div class="text-right">
-              <span id="siteUrlLabel" class="text-[9px] text-slate-400 font-sans font-bold block"></span>
+
+            <!-- Color or Grayscale Calibration Bar for Printers -->
+            <div id="calibrationBar" class="mt-2 grid grid-cols-6 h-3 rounded overflow-hidden border border-slate-300">
+              <!-- Dynamically populated in JS -->
             </div>
           </div>
 
-          <!-- Color or Grayscale Calibration Bar for Printers -->
-          <div id="calibrationBar" class="mt-2 grid grid-cols-6 h-3 rounded overflow-hidden border border-slate-300">
-            <!-- Dynamically populated in JS -->
-          </div>
         </div>
-
       </div>
     </main>
 
   </div>
 
-  <!-- FOOTER (No Print) -->
-  <footer class="no-print bg-slate-800 border-t border-slate-700 py-6 px-4 mt-12 text-center text-xs text-slate-400">
+  <!-- FOOTER (No Print) — desktop only. The mobile layout is a fixed-height
+       split (header + two independently-scrolling panes) with no spare
+       room for it; contact info is still reachable via a laptop/desktop. -->
+  <footer class="no-print hidden lg:block bg-slate-800 border-t border-slate-700 py-6 px-4 mt-12 text-center text-xs text-slate-400">
     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
       <p>PaperJammed.net — More updates on the way!</p>
       <p>
