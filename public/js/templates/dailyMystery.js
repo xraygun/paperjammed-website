@@ -211,7 +211,7 @@ export default {
           .join('')
       : '';
 
-    return `
+    const sheetHtml = `
       <div class="p-3 bg-slate-50 font-mono text-slate-900" style="position:relative; overflow:hidden; border-color:#000; border-style:${style.borderStyle}; border-width:${style.borderWidth}px;">
         ${codeSpill}
         <div style="position:relative; z-index:1; transform: scale(${style.fontScale.toFixed(3)}); transform-origin: top left; width: ${(100 / style.fontScale).toFixed(2)}%; font-family: ${style.fontFamily};">
@@ -235,5 +235,22 @@ export default {
         </div>
       </div>
     `;
+
+    // "Cooked" withholds its own on-screen preview — the actual sheet only
+    // renders under @media print (see .print-only in style.css), so the
+    // visitor genuinely has to print it to see what happened. The teaser
+    // takes the screen slot instead.
+    if (!cooked) return sheetHtml;
+
+    const teaser = `
+      <div class="no-print flex-1 flex flex-col items-center justify-center text-center gap-3 p-8 min-h-[500px] bg-gradient-to-b from-red-950/40 to-slate-950 border-4 border-dashed border-red-600 rounded-lg">
+        <i class="fa-solid fa-skull-crossbones text-5xl text-red-500"></i>
+        <p class="text-red-400 font-black uppercase tracking-widest text-sm">Preview Withheld</p>
+        <p class="text-fuchsia-200 font-mono text-sm max-w-xs">I guess you'll have to click print to find out&hellip; if you aren't too scared.</p>
+        <p class="text-[10px] text-slate-500 italic">(Cooked hides its own preview. The paper won't.)</p>
+      </div>
+    `;
+
+    return teaser + `<div class="print-only">${sheetHtml}</div>`;
   }
 };

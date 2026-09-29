@@ -4,6 +4,14 @@
   margin: 0;
 }
 
+/* Counterpart to .no-print: hidden on screen, revealed only in print. Used
+   by the Daily Mystery template's "Cooked" intensity to withhold its own
+   preview (see dailyMystery.js) — the visitor has to actually print to
+   see it. */
+.print-only {
+  display: none;
+}
+
 @media print {
   body {
     background: #ffffff !important;
@@ -15,6 +23,9 @@
   }
   .no-print {
     display: none !important;
+  }
+  .print-only {
+    display: block !important;
   }
   /* The print sheet is nested inside layout wrappers (body.min-h-screen >
      grid container with p-4/md:p-6 and gap-6 > main). Their padding, gaps
