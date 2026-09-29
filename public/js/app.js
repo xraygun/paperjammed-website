@@ -190,11 +190,17 @@ function resetShrinkToFit() {
 function applyShrinkToFit() {
   const t = templates[state.currentTemplateKey];
   resetShrinkToFit();
-  if (!t || t.multiPage) return; // never scale multi-page templates
+  if (!t) return;
 
   const printSheet = document.getElementById('printSheet');
   const contentEl = document.getElementById('templateContent');
   if (!printSheet || !contentEl) return;
+
+  // Never scale multi-page templates. t.multiPage covers templates that
+  // are ALWAYS multi-page; printSheet's own live class also covers Daily
+  // Mystery's Unhinged state, which goes multi-page dynamically (see
+  // renderDailyMysteryIfActive) without t.multiPage ever being true.
+  if (t.multiPage || printSheet.classList.contains('multi-page-mode')) return;
 
   const availableHeight = printSheet.clientHeight - 2 * mmToPx(10) - SHRINK_FOOTER_RESERVE_PX;
   const naturalHeight = contentEl.scrollHeight;
@@ -444,10 +450,25 @@ async function loadDailyTemplate() {
 // The randomness hash/intensity controls both need a full re-render since
 // they change border/font/size and (at "Cooked") inject markup, not just
 // one text node.
+//
+// At Unhinged (100%) specifically, dailyMystery.js's render() switches to
+// a genuine two-page print structure (blank page 1, real content page 2 —
+// so a quick glance at print preview shows nothing) instead of the usual
+// single hidden page. #printSheet's multi-page-mode class normally only
+// gets set once, in setTemplate(), off the template's static multiPage
+// flag — but this template goes multi-page dynamically based on the
+// intensity slider, which can change without setTemplate() ever running
+// again, so it has to be re-checked here on every daily-mystery render.
 function renderDailyMysteryIfActive() {
   if (state.currentTemplateKey === 'dailyMystery') {
     const contentEl = document.getElementById('templateContent');
     if (contentEl) contentEl.innerHTML = templates.dailyMystery.render(state);
+
+    const isUnhinged = (state.dailyIntensity ?? 0) >= 100;
+    const printSheet = document.getElementById('printSheet');
+    const footerContainer = document.getElementById('globalFooterContainer');
+    if (printSheet) printSheet.classList.toggle('multi-page-mode', isUnhinged);
+    if (footerContainer) footerContainer.style.display = isUnhinged ? 'none' : 'block';
   }
 }
 

@@ -449,6 +449,19 @@ export default {
       </div>
     `;
 
+    // At Unhinged specifically, the actual sheet moves to a genuine SECOND
+    // printed page behind a blank first one — someone skimming the print
+    // preview (which the browser always shows, and which the .print-only
+    // trick alone can't hide — that's a platform limitation, not
+    // something a page can suppress) sees a blank page and prints,
+    // instead of paging forward to find the content. This depends on
+    // app.js's renderDailyMysteryIfActive() toggling #printSheet's
+    // multi-page-mode class to match — it can't be done here, since this
+    // function only returns markup, it doesn't touch the DOM directly.
+    if (pct >= 100) {
+      return teaser + `<div class="print-only"><div class="print-page"></div><div class="print-page">${sheetHtml}</div></div>`;
+    }
+
     return teaser + `<div class="print-only">${sheetHtml}</div>`;
   }
 };
