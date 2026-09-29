@@ -448,8 +448,15 @@ function renderDailyMysteryIfActive() {
 }
 
 // Duplicated from dailyMystery.js's own copy on purpose — app.js never
-// imports a specific template file (see templates/index.js).
+// imports a specific template file (see templates/index.js). Same 0-100
+// continuous slider, same four named bands at the same thresholds.
 const DAILY_INTENSITY_LABELS = ['Rare', 'Medium', 'Well Done', 'Cooked'];
+function dailyIntensityBand(pct) {
+  if (pct >= 75) return 3;
+  if (pct >= 50) return 2;
+  if (pct >= 25) return 1;
+  return 0;
+}
 
 // The sidebar button's starfield is keyed off (hash, intensity) too, so
 // both controls need to refresh it, not just the print-sheet re-render.
@@ -476,11 +483,11 @@ function handleDailyHashRefresh() {
 function handleDailyIntensityChange(val) {
   let num = parseInt(val, 10);
   if (isNaN(num) || num < 0) num = 0;
-  if (num > 3) num = 3;
+  if (num > 100) num = 100;
   state.dailyIntensity = num;
 
   const statusEl = document.getElementById('dailyIntensityStatus');
-  if (statusEl) statusEl.textContent = DAILY_INTENSITY_LABELS[num] || DAILY_INTENSITY_LABELS[0];
+  if (statusEl) statusEl.textContent = DAILY_INTENSITY_LABELS[dailyIntensityBand(num)];
 
   renderDailyMysteryIfActive();
   refreshDailyStarfield();
@@ -494,7 +501,6 @@ function handleDailyIntensityChange(val) {
 // forever in the background; it's a no-op render whenever some other
 // template is active, so nothing needs to start/stop it.
 const DAILY_SWAP_INTERVAL_MS = 3000;
-const DAILY_SWAP_COUNT_BY_INTENSITY = [1, 1, 2, 3];
 
 function tickDailySwap() {
   const swaps = state.dailyTemplateData && state.dailyTemplateData.swaps;
@@ -502,7 +508,7 @@ function tickDailySwap() {
   const allKeys = Object.keys(swaps);
   if (allKeys.length === 0) return false;
 
-  const wantCount = DAILY_SWAP_COUNT_BY_INTENSITY[state.dailyIntensity] || 1;
+  const wantCount = 1 + Math.floor(state.dailyIntensity / 34);
   const keys = allKeys.sort(() => Math.random() - 0.5).slice(0, wantCount);
 
   let changedAny = false;

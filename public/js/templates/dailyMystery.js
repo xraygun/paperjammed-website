@@ -10,10 +10,15 @@
 //
 // On top of that static daily text, this template adds a SEPARATE,
 // purely visual randomness layer driven by state.dailyHash (a text field
-// the visitor can edit or reroll) and state.dailyIntensity (a 0-3 "how
-// would you like your template?" slider). The hash seeds a deterministic
-// PRNG so the same hash always looks the same; intensity scales how far
-// font size / family / border are allowed to drift from normal.
+// the visitor can edit or reroll) and state.dailyIntensity (a continuous
+// 0-100 "how would you like your template?" slider — same smooth,
+// no-stops feel as the Jam Coverage slider). The hash seeds a
+// deterministic PRNG so the same hash always looks the same; intensity
+// scales how far font size/family/border/spacing drift from normal, all
+// continuously rather than in fixed steps. A few effects are inherently
+// on/off rather than gradual (the Cooked-only warning banner, code
+// spill, hidden preview) — those switch on together once intensity
+// crosses into the top quarter (see intensityBand/isCooked below).
 //
 // On top of THAT, the daily content can itself contain [[N]] placeholder
 // tokens (see the swaps object src/index.js asks the model for) — a
@@ -43,6 +48,19 @@ const DEFAULT_CONTENT = {
 // Kept as a plain literal rather than a shared export so app.js never has
 // to import a specific template file directly (see templates/index.js).
 const INTENSITY_LABELS = ['Rare', 'Medium', 'Well Done', 'Cooked'];
+
+// Maps the continuous 0-100 slider onto the same four named bands for
+// display and for the effects that are genuinely on/off rather than
+// gradual. Thresholds duplicated in app.js's status-text update.
+function intensityBand(pct) {
+  if (pct >= 75) return 3;
+  if (pct >= 50) return 2;
+  if (pct >= 25) return 1;
+  return 0;
+}
+function isCooked(pct) {
+  return pct >= 75;
+}
 
 function esc(s) {
   return String(s)
@@ -111,10 +129,10 @@ function glitchInsert(word) {
   return word.slice(0, pos) + ch + word.slice(pos);
 }
 
-function mangleText(text, intensityLevel) {
-  if (!text || intensityLevel < 2) return text;
-  const mangleChance = intensityLevel === 2 ? 0.14 : 0.3;
-  const glitchChance = intensityLevel === 3 ? 0.18 : 0;
+function mangleText(text, pct) {
+  if (!text || pct < 50) return text;
+  const mangleChance = ((pct - 50) / 50) * 0.35;
+  const glitchChance = pct < 75 ? 0 : ((pct - 75) / 25) * 0.25;
 
   return text
     .split(' ')
@@ -132,10 +150,13 @@ function mangleText(text, intensityLevel) {
     .join(' ');
 }
 
-// Intensity 0-3 -> how far from baseline the randomized styling drifts.
-// Deliberately clamped even at "Cooked" — this still has to survive the
-// site's print shrink-to-fit, not go fully unbounded.
-const INTENSITY_MULTIPLIER = [0.15, 0.4, 0.7, 1.0];
+// Intensity 0-100 -> how far from baseline the randomized styling drifts,
+// continuous rather than four fixed steps. Deliberately clamped even at
+// 100 — this still has to survive the site's print shrink-to-fit, not go
+// fully unbounded.
+function intensityMultiplier(pct) {
+  return 0.15 + (pct / 100) * 0.85;
+}
 
 const FONT_POOL = [
   'inherit',
@@ -146,9 +167,12 @@ const FONT_POOL = [
 const BORDER_STYLES = ['solid', 'dashed', 'dotted', 'double'];
 const ALIGN_POOL = ['center', 'justify'];
 
-// Objects "flying" through the selected sidebar button's black window.
+// Objects "flying" through the selected sidebar button's black window —
+// one more joins every 10% of intensity.
 const FLOAT_EMOJI = ['⏰', '🧙', '🐇', '🚽', '🪠', '🔮', '🧦', '🪑'];
-const FLOAT_COUNT_BY_INTENSITY = [2, 4, 6, 9];
+function floatCount(pct) {
+  return 2 + Math.floor(pct / 10);
+}
 
 // "Cooked" (intensity 3) extras: a combustion warning banner and a few
 // lines of real-looking code spilled onto the page at odd angles. Purely
@@ -184,10 +208,10 @@ function computeCookedExtras(hash) {
   return { lines };
 }
 
-function computeRandomStyle(hash, intensityLevel) {
+function computeRandomStyle(hash, pct) {
   const seed = stringToSeed(String(hash == null ? '' : hash));
   const rand = mulberry32(seed);
-  const m = INTENSITY_MULTIPLIER[intensityLevel] ?? INTENSITY_MULTIPLIER[0];
+  const m = intensityMultiplier(pct);
 
   // Font scale: centered on 1.0, max ~±15% drift even at full intensity.
   const drift = 1 + (rand() * 2 - 1) * 0.15 * m;
@@ -214,9 +238,12 @@ function computeRandomStyle(hash, intensityLevel) {
   return { fontScale, fontFamily, borderWidth, borderStyle, letterSpacing, textAlign };
 }
 
-function starfieldHtml(hash, intensityLevel) {
-  const count = FLOAT_COUNT_BY_INTENSITY[intensityLevel] ?? FLOAT_COUNT_BY_INTENSITY[0];
-  const rand = mulberry32(stringToSeed(`${hash == null ? '' : hash}::starfield::${intensityLevel}`));
+function starfieldHtml(hash, pct) {
+  const count = floatCount(pct);
+  // Seeded from the hash alone (not pct): dragging the slider draws more
+  // objects from the same sequence rather than reshuffling everyone's
+  // position every time the percentage ticks over.
+  const rand = mulberry32(stringToSeed(`${hash == null ? '' : hash}::starfield`));
 
   let floaters = '';
   for (let i = 0; i < count; i++) {
@@ -279,8 +306,8 @@ export default {
   // them and watch.
   controlsHtml(state) {
     const hash = state.dailyHash ?? '';
-    const intensity = state.dailyIntensity ?? 0;
-    const label = INTENSITY_LABELS[intensity] || INTENSITY_LABELS[0];
+    const pct = state.dailyIntensity ?? 0;
+    const label = INTENSITY_LABELS[intensityBand(pct)];
 
     return `
       <div class="mt-2 bg-fuchsia-950/30 border border-fuchsia-500/30 rounded-lg p-3 space-y-2.5">
@@ -301,7 +328,7 @@ export default {
 
         <div class="pt-1">
           <label for="dailyIntensityInput" class="text-[11px] font-bold text-white uppercase tracking-wider block mb-1">How would you like your template?</label>
-          <input type="range" id="dailyIntensityInput" min="0" max="3" step="1" value="${intensity}"
+          <input type="range" id="dailyIntensityInput" min="0" max="100" value="${pct}"
             oninput="handleDailyIntensityChange(this.value)"
             class="w-full accent-white h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
           <p id="dailyIntensityStatus" class="text-center text-xs font-mono font-bold text-white mt-1 uppercase tracking-wider">${label}</p>
@@ -312,11 +339,11 @@ export default {
 
   render(state) {
     const c = state.dailyTemplateData || DEFAULT_CONTENT;
-    const intensityLevel = state.dailyIntensity ?? 0;
-    const style = computeRandomStyle(state.dailyHash, intensityLevel);
-    const cooked = intensityLevel === 3 ? computeCookedExtras(state.dailyHash) : null;
+    const pct = state.dailyIntensity ?? 0;
+    const style = computeRandomStyle(state.dailyHash, pct);
+    const cooked = isCooked(pct) ? computeCookedExtras(state.dailyHash) : null;
 
-    const sw = (text) => mangleText(applySwaps(text, c.swaps, state.dailySwapIndex), intensityLevel);
+    const sw = (text) => mangleText(applySwaps(text, c.swaps, state.dailySwapIndex), pct);
     const proseStyle = `letter-spacing:${style.letterSpacing}em; text-align:${style.textAlign};`;
     const listItemStyle = `letter-spacing:${style.letterSpacing}em;`;
 
