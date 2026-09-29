@@ -295,6 +295,21 @@ via PR also gives you a Revert button — pushing straight to `main` does not.
   - If a change isn't showing up, check both before assuming the code is
     wrong: Deployments tab for a recent build matching your commit, and
     that its deploy command actually promoted to production.
+- **PR/branch preview builds fail with "missing a `previews` block".**
+  Workers Builds has a *separate* command field for non-production
+  branches (Builds → "Previews Base" tab → Build configuration →
+  "Preview command"), independent from the production tab's "Deploy
+  command". If it's set to `npx wrangler preview` (a different, beta
+  Wrangler command that needs its own `previews: {}` block in
+  wrangler.jsonc, which this project doesn't have and doesn't need),
+  every PR build fails immediately and no preview URL is ever posted —
+  looks identical to "nothing happened" from the PR side. Fix: set it to
+  `npx wrangler versions upload` (the correct command for previews —
+  stages a version and gives a preview URL without touching production
+  traffic, unlike `wrangler deploy`). This field has silently failed to
+  actually save on the first attempt before — after changing it,
+  reload the settings page and confirm the new value is still there
+  before assuming a fresh build will pick it up.
 
 ## 9. Content guidelines
 
