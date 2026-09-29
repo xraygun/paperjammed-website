@@ -1,4 +1,4 @@
-import { templates, templateOrder } from './templates/index.js';
+import { templates, templateOrder, categories } from './templates/index.js';
 import { calibrationBars } from './calibrationBars.js';
 import { SITE_URL } from './siteConfig.js';
 
@@ -18,7 +18,8 @@ const state = {
   dailyTemplateData: null,
   dailyHash: String(Math.floor(Math.random() * 1e9)),
   dailyIntensity: 0,
-  dailySwapIndex: {}
+  dailySwapIndex: {},
+  categoryFilter: 'all'
 };
 
 // ----------------------------------------------------------------------------
@@ -225,11 +226,7 @@ window.addEventListener('afterprint', resetShrinkToFit);
 // ----------------------------------------------------------------------------
 // Sidebar rendering (fully data-driven off the template registry)
 // ----------------------------------------------------------------------------
-function renderSidebar() {
-  const container = document.getElementById('templateList');
-  if (!container) return;
-
-  container.innerHTML = templateOrder.map((key) => {
+function renderTemplateItem(key) {
     const t = templates[key];
     const badgeHtml = t.badge
       ? `<span class="text-[10px] ${t.badge.className} font-bold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0 uppercase tracking-wider">${t.badge.text}</span>`
@@ -273,7 +270,52 @@ function renderSidebar() {
         ${controlsHtml}
       </div>
     `;
-  }).join('');
+}
+
+// The list is grouped under category headers (see `categories` in
+// templates/index.js), with a row of filter chips above it. A template no
+// category lists still shows, under "Other", so it can't silently vanish.
+function renderSidebar() {
+  const container = document.getElementById('templateList');
+  if (!container) return;
+
+  const placed = new Set(categories.flatMap((c) => c.keys));
+  const groups = categories
+    .map((c) => ({ id: c.id, label: c.label, keys: templateOrder.filter((k) => c.keys.includes(k)) }))
+    .filter((g) => g.keys.length);
+  const other = templateOrder.filter((k) => !placed.has(k));
+  if (other.length) groups.push({ id: 'other', label: 'Other', keys: other });
+
+  container.innerHTML = groups.map((g) => `
+    <div class="template-group space-y-3" data-category="${g.id}">
+      <h3 class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">${g.label}</h3>
+      ${g.keys.map(renderTemplateItem).join('')}
+    </div>
+  `).join('');
+
+  const bar = document.getElementById('categoryFilter');
+  if (bar) {
+    bar.innerHTML = [{ id: 'all', label: 'All' }, ...groups].map((c) => `
+      <button type="button" data-filter="${c.id}" onclick="setCategoryFilter('${c.id}')"
+        class="shrink-0 text-xs font-semibold px-3 py-1 rounded-full border border-slate-600 bg-slate-700/60 text-slate-300 hover:text-white transition aria-pressed:bg-rose-500 aria-pressed:border-rose-400 aria-pressed:text-white">${c.label}</button>
+    `).join('');
+  }
+  applyCategoryFilter();
+}
+
+function setCategoryFilter(id) {
+  state.categoryFilter = id;
+  applyCategoryFilter();
+}
+
+function applyCategoryFilter() {
+  const active = state.categoryFilter;
+  document.querySelectorAll('#categoryFilter button').forEach((b) => {
+    b.setAttribute('aria-pressed', String(b.dataset.filter === active));
+  });
+  document.querySelectorAll('#templateList .template-group').forEach((g) => {
+    g.style.display = active === 'all' || g.dataset.category === active ? '' : 'none';
+  });
 }
 
 // ----------------------------------------------------------------------------
@@ -622,6 +664,7 @@ function initApp() {
 
 // Expose the handlers referenced by inline HTML attributes (onclick/oninput)
 window.setTemplate = setTemplate;
+window.setCategoryFilter = setCategoryFilter;
 window.handleJamSliderChange = handleJamSliderChange;
 window.handleJamFlavorChange = handleJamFlavorChange;
 window.handleToastinessChange = handleToastinessChange;
