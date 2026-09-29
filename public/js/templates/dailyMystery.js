@@ -294,10 +294,10 @@ export default {
   label: 'Temple of Unhinged Testpages',
   description: '',
   icon: 'fa-dice',
-  badge: { text: 'DAILY', className: 'bg-fuchsia-500 text-white' },
-  borderClasses: 'border-fuchsia-500/50 hover:border-fuchsia-400 bg-fuchsia-950/20 hover:bg-fuchsia-900/30',
+  badge: { text: 'Fresh Content Daily', className: 'bg-fuchsia-500 text-white' },
+  borderClasses: 'border-fuchsia-500/50 hover:border-fuchsia-400 bg-fuchsia-950/20 hover:bg-fuchsia-900/30 min-h-[92px]',
   radioAccent: 'accent-fuchsia-500',
-  labelTextClass: 'text-fuchsia-300',
+  labelTextClass: 'text-white',
   configType: 'bw',
   multiPage: false,
 
@@ -305,21 +305,33 @@ export default {
   // by CSS while this button is selected (see .tout-letter in style.css).
   // A fixed per-letter stagger, not randomness — this runs once at boot.
   //
-  // The whole thing is wrapped in one outer <span> so the label row's
-  // flex+gap only ever sees ONE child here (plus the icon) — without it,
-  // every individual letter becomes its own flex item and gets a 6px gap
-  // shoved after it. That outer span is a plain inline element, so the
-  // label still wraps normally at word boundaries if it doesn't fit.
+  // Two wrapping layers, both load-bearing:
+  // - The whole thing sits in one outer <span> so the label row's flex+gap
+  //   only ever sees ONE child here (plus the icon) — without it, every
+  //   individual letter becomes its own flex item and gets a 6px gap
+  //   shoved after it.
+  // - Each WORD is further wrapped in its own <span class="tout-word">
+  //   (white-space:nowrap) — adjacent inline-block elements get an
+  //   implicit line-break opportunity between them even with no
+  //   whitespace in the markup, so without this a long word can wrap
+  //   mid-word (e.g. "Testpage" / "s" on its own line). Wrapping only
+  //   happens at the real spaces between tout-word spans now.
   labelHtml() {
-    const letters = this.label
-      .split('')
-      .map((ch, i) => {
-        if (ch === ' ') return ' ';
-        const delay = ((i * 173) % 2600) / 1000;
-        return `<span class="tout-letter" style="animation-delay:${delay}s">${esc(ch)}</span>`;
+    let i = 0;
+    const words = this.label
+      .split(' ')
+      .map((word) => {
+        const letters = word
+          .split('')
+          .map((ch) => {
+            const delay = ((i++ * 173) % 2600) / 1000;
+            return `<span class="tout-letter" style="animation-delay:${delay}s">${esc(ch)}</span>`;
+          })
+          .join('');
+        return `<span class="tout-word">${letters}</span>`;
       })
-      .join('');
-    return `<span>${letters}</span>`;
+      .join(' ');
+    return `<span>${words}</span>`;
   },
 
   // Sidebar-only: the black "window" + floating emoji behind the button,
@@ -377,7 +389,7 @@ export default {
     const listItemStyle = `letter-spacing:${style.letterSpacing}em;`;
 
     const paragraphs = (c.bodyParagraphs || [])
-      .map((p) => `<p class="text-[10px] leading-relaxed text-slate-800 mb-1.5" style="${proseStyle}">${esc(sw(p))}</p>`)
+      .map((p) => `<p class="text-[14px] leading-relaxed text-slate-800 mb-1.5" style="${proseStyle}">${esc(sw(p))}</p>`)
       .join('');
 
     const bullets = (c.bulletPoints || [])
@@ -385,7 +397,7 @@ export default {
       .join('');
 
     const warningBanner = cooked
-      ? `<div class="border-2 border-red-600 bg-red-50 text-red-700 text-[9px] font-black uppercase tracking-wider text-center py-1 mb-2">⚠ WARNING: THIS PAGE MAY COMBUST IN PRINTER ⚠</div>`
+      ? `<div class="border-2 border-red-600 bg-red-50 text-red-700 text-[13px] font-black uppercase tracking-wider text-center py-1 mb-2">⚠ WARNING: THIS PAGE MAY COMBUST IN PRINTER ⚠</div>`
       : '';
 
     const codeSpill = cooked
@@ -403,19 +415,19 @@ export default {
         <div style="position:relative; z-index:1; transform: scale(${style.fontScale.toFixed(3)}); transform-origin: top left; width: ${(100 / style.fontScale).toFixed(2)}%; font-family: ${style.fontFamily};">
           ${warningBanner}
           <div class="border-b-4 border-black pb-1 mb-2 text-center">
-            <span class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-600 block">AUTOMATED DAILY DIAGNOSTIC — CONTENT MAY VARY WITHOUT WARNING</span>
-            <h1 class="text-lg font-black uppercase tracking-widest text-slate-950 my-1 leading-tight">${esc(applySwaps(c.headline, c.swaps, state.dailySwapIndex))}</h1>
-            <p class="text-[10px] italic text-slate-700" style="${proseStyle}">${esc(sw(c.subheadline))}</p>
+            <span class="text-[13px] font-bold uppercase tracking-[0.2em] text-slate-600 block">AUTOMATED DAILY DIAGNOSTIC — CONTENT MAY VARY WITHOUT WARNING</span>
+            <h1 class="text-xl font-black uppercase tracking-widest text-slate-950 my-1 leading-tight">${esc(applySwaps(c.headline, c.swaps, state.dailySwapIndex))}</h1>
+            <p class="text-[14px] italic text-slate-700" style="${proseStyle}">${esc(sw(c.subheadline))}</p>
           </div>
 
           <div class="space-y-1">${paragraphs}</div>
 
           <div class="my-2 border-2 border-black p-2 bg-white">
-            <p class="font-bold uppercase text-[9px] tracking-wider text-center border-b border-black pb-1 mb-1">STATUS CHECKLIST</p>
-            <ul class="text-[10px] leading-relaxed text-slate-800 space-y-0.5 pl-4 list-disc">${bullets}</ul>
+            <p class="font-bold uppercase text-[13px] tracking-wider text-center border-b border-black pb-1 mb-1">STATUS CHECKLIST</p>
+            <ul class="text-[14px] leading-relaxed text-slate-800 space-y-0.5 pl-4 list-disc">${bullets}</ul>
           </div>
 
-          <div class="border-t-2 border-black mt-2 pt-1 text-[9px] text-slate-800 leading-tight italic" style="${proseStyle}">
+          <div class="border-t-2 border-black mt-2 pt-1 text-[13px] text-slate-800 leading-tight italic" style="${proseStyle}">
             ${esc(sw(c.footerNote))}
           </div>
         </div>
