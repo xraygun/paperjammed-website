@@ -139,7 +139,7 @@ function computeRandomStyle(hash, intensityLevel) {
 
 export default {
   key: 'dailyMystery',
-  label: 'The One That Keeps Changing',
+  label: 'Temple of Unhinged Testpages',
   description: "A brand new nonsense diagnostic sheet, written by a robot, once a day. Nobody knows what it'll say next — including us.",
   icon: 'fa-dice',
   badge: { text: 'DAILY', className: 'bg-fuchsia-500 text-white' },
