@@ -15,7 +15,9 @@ const state = {
   orderAnimal: '',
   orderRecipient: '',
   orderAddress: '',
-  dailyTemplateData: null
+  dailyTemplateData: null,
+  dailyHash: String(Math.floor(Math.random() * 1e9)),
+  dailyIntensity: 0
 };
 
 // ----------------------------------------------------------------------------
@@ -415,13 +417,52 @@ async function loadDailyTemplate() {
     const data = await res.json().catch(() => null);
     if (!data) return;
     state.dailyTemplateData = data;
-    if (state.currentTemplateKey === 'dailyMystery') {
-      const contentEl = document.getElementById('templateContent');
-      if (contentEl) contentEl.innerHTML = templates.dailyMystery.render(state);
-    }
+    renderDailyMysteryIfActive();
   } catch (e) {
     // Offline/network failure — the template's own DEFAULT_CONTENT covers this.
   }
+}
+
+// The randomness hash/intensity controls both need a full re-render since
+// they change border/font/size and (at "Cooked") inject markup, not just
+// one text node.
+function renderDailyMysteryIfActive() {
+  if (state.currentTemplateKey === 'dailyMystery') {
+    const contentEl = document.getElementById('templateContent');
+    if (contentEl) contentEl.innerHTML = templates.dailyMystery.render(state);
+  }
+}
+
+// Duplicated from dailyMystery.js's own copy on purpose — app.js never
+// imports a specific template file (see templates/index.js).
+const DAILY_INTENSITY_LABELS = ['Rare', 'Medium', 'Well Done', 'Cooked'];
+
+function handleDailyHashChange(val) {
+  state.dailyHash = val;
+  renderDailyMysteryIfActive();
+}
+
+function handleDailyHashRefresh() {
+  const newHash = String(Math.floor(Math.random() * 1e9));
+  state.dailyHash = newHash;
+  const hashInput = document.getElementById('dailyHashInput');
+  if (hashInput) hashInput.value = newHash;
+  renderDailyMysteryIfActive();
+}
+
+function handleDailyIntensityChange(val) {
+  let num = parseInt(val, 10);
+  if (isNaN(num) || num < 0) num = 0;
+  if (num > 3) num = 3;
+  state.dailyIntensity = num;
+
+  const statusEl = document.getElementById('dailyIntensityStatus');
+  if (statusEl) statusEl.textContent = DAILY_INTENSITY_LABELS[num] || DAILY_INTENSITY_LABELS[0];
+
+  const cookedNoteEl = document.getElementById('dailyCookedNote');
+  if (cookedNoteEl) cookedNoteEl.style.display = num === 3 ? 'block' : 'none';
+
+  renderDailyMysteryIfActive();
 }
 
 // ----------------------------------------------------------------------------
@@ -448,6 +489,9 @@ window.handleCertTechNameChange = handleCertTechNameChange;
 window.handleOrderAnimalChange = handleOrderAnimalChange;
 window.handleOrderRecipientChange = handleOrderRecipientChange;
 window.handleOrderAddressChange = handleOrderAddressChange;
+window.handleDailyHashChange = handleDailyHashChange;
+window.handleDailyHashRefresh = handleDailyHashRefresh;
+window.handleDailyIntensityChange = handleDailyIntensityChange;
 window.updateCustomNote = updateCustomNote;
 window.handlePrintAction = handlePrintAction;
 
