@@ -18,10 +18,11 @@
 // On top of THAT, the daily content can itself contain [[N]] placeholder
 // tokens (see the swaps object src/index.js asks the model for) — a
 // handful of nouns the model marked as swappable, each with 5 synonym
-// options. state.dailyTick (advanced on a timer by app.js, cadence tied
-// to the same intensity slider) feeds into the same seeded-PRNG scheme to
-// pick which synonym shows, so at higher intensity the wording visibly
-// rotates every few seconds without ever touching the underlying AI text.
+// options. state.dailySwapIndex (a plain {key: chosenIndex} map app.js
+// mutates on a flat 3s timer, picking one random key and bumping it to a
+// DIFFERENT index each time) holds which synonym currently shows for
+// each slot — independent of the intensity slider, so a word is always
+// quietly rotating no matter how the visual weirdness is set.
 
 const DEFAULT_CONTENT = {
   headline: 'DIAGNOSTIC CONTENT LOADING',
@@ -73,19 +74,18 @@ function mulberry32(seed) {
   };
 }
 
-// Replaces every [[N]] token in text with one of swaps[N]'s synonyms,
-// picked deterministically from seedBase + that token's own number — so
-// every occurrence of the same [[N]] across headline/paragraphs/bullets
-// picks the same word, and a given (hash, tick) always looks the same.
-// A token with no matching swaps entry (older cached content, a model
+// Replaces every [[N]] token in text with swaps[N][indexMap[N]] — every
+// occurrence of the same [[N]] across headline/paragraphs/bullets shows
+// the same word, since they all read from the same indexMap entry. A
+// token with no matching swaps entry (older cached content, a model
 // slip) just disappears rather than leaving a raw [[N]] on the page.
-function applySwaps(text, swaps, seedBase) {
+function applySwaps(text, swaps, indexMap) {
   if (!text) return text;
   return String(text).replace(/\[\[(\d+)\]\]/g, (_match, key) => {
     const options = swaps && swaps[key];
     if (!options || !options.length) return '';
-    const rand = mulberry32(stringToSeed(`${seedBase}::${key}`));
-    return options[Math.floor(rand() * options.length)];
+    const idx = (indexMap && indexMap[key]) || 0;
+    return options[idx % options.length];
   });
 }
 
@@ -193,7 +193,7 @@ export default {
             <i class="fa-solid fa-dice"></i>
           </button>
         </div>
-        <p class="text-[9px] text-fuchsia-300/60 italic">Seeds the page's visual weirdness — and reshuffles a few of today's words. Not fully explained or understood.</p>
+        <p class="text-[9px] text-fuchsia-300/60 italic">Seeds the page's visual weirdness. A random word also swaps to a synonym every few seconds, on its own. Not fully explained or understood.</p>
 
         <div class="pt-1">
           <label for="dailyIntensityInput" class="text-[11px] font-bold text-fuchsia-300 uppercase tracking-wider block mb-1">How would you like your template?</label>
@@ -213,8 +213,7 @@ export default {
     const style = computeRandomStyle(state.dailyHash, intensityLevel);
     const cooked = intensityLevel === 3 ? computeCookedExtras(state.dailyHash) : null;
 
-    const swapSeed = `${state.dailyHash == null ? '' : state.dailyHash}::t${state.dailyTick ?? 0}`;
-    const sw = (text) => applySwaps(text, c.swaps, swapSeed);
+    const sw = (text) => applySwaps(text, c.swaps, state.dailySwapIndex);
 
     const paragraphs = (c.bodyParagraphs || [])
       .map((p) => `<p class="text-[10px] leading-relaxed text-slate-800 mb-1.5">${esc(sw(p))}</p>`)

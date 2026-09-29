@@ -18,7 +18,7 @@ const state = {
   dailyTemplateData: null,
   dailyHash: String(Math.floor(Math.random() * 1e9)),
   dailyIntensity: 0,
-  dailyTick: 0
+  dailySwapIndex: {}
 };
 
 // ----------------------------------------------------------------------------
@@ -466,25 +466,38 @@ function handleDailyIntensityChange(val) {
   renderDailyMysteryIfActive();
 }
 
-// Advances state.dailyTick on a timer so the daily content's swappable
-// words (see dailyMystery.js's applySwaps) keep rotating on their own —
-// cadence speeds up with the intensity slider, from a slow drift at Rare
-// to a genuine "never the same for more than a couple seconds" at Cooked.
-// Border/font are deliberately NOT tied to this timer — only the hash
-// (manual reroll) changes those, so the page doesn't visually twitch.
+// Every 3s, picks ONE random swappable word (see dailyMystery.js's
+// applySwaps/state.dailySwapIndex) and bumps it to a DIFFERENT synonym —
+// so the page always has exactly one word quietly changing, independent
+// of the intensity slider (that only controls border/font drift, tied to
+// the hash, not this timer — so the page doesn't visually twitch too).
 // Runs forever in the background; it's a no-op render whenever some other
 // template is active, so nothing needs to start/stop it.
-const DAILY_TICK_INTERVAL_MS = [10000, 7000, 4000, 2000];
+const DAILY_SWAP_INTERVAL_MS = 3000;
 
-function scheduleDailyTick() {
-  const intervalMs = DAILY_TICK_INTERVAL_MS[state.dailyIntensity] || DAILY_TICK_INTERVAL_MS[0];
-  setTimeout(() => {
-    if (state.currentTemplateKey === 'dailyMystery') {
-      state.dailyTick = (state.dailyTick + 1) % 1000000;
+function tickDailySwap() {
+  const swaps = state.dailyTemplateData && state.dailyTemplateData.swaps;
+  if (!swaps) return false;
+  const keys = Object.keys(swaps);
+  if (keys.length === 0) return false;
+
+  const key = keys[Math.floor(Math.random() * keys.length)];
+  const options = swaps[key];
+  if (!options || options.length < 2) return false;
+
+  const current = state.dailySwapIndex[key] || 0;
+  let next = current;
+  while (next === current) next = Math.floor(Math.random() * options.length);
+  state.dailySwapIndex[key] = next;
+  return true;
+}
+
+function scheduleDailySwap() {
+  setInterval(() => {
+    if (state.currentTemplateKey === 'dailyMystery' && tickDailySwap()) {
       renderDailyMysteryIfActive();
     }
-    scheduleDailyTick();
-  }, intervalMs);
+  }, DAILY_SWAP_INTERVAL_MS);
 }
 
 // ----------------------------------------------------------------------------
@@ -498,7 +511,7 @@ function initApp() {
   setTemplate(state.currentTemplateKey);
   loadPrintCount();
   loadDailyTemplate();
-  scheduleDailyTick();
+  scheduleDailySwap();
 }
 
 // Expose the handlers referenced by inline HTML attributes (onclick/oninput)
