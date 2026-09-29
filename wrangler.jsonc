@@ -31,5 +31,21 @@
       "binding": "DAILY_TEMPLATE",
       "id": "0a148b477f20418782bc83163d143b86"
     }
-  ]
+  ],
+
+  // Branch/PR preview builds run `wrangler preview`, which refuses to run
+  // without this block. Previews do NOT inherit top-level bindings, so the
+  // ones the site reads are repeated here. Cron triggers can't be set on
+  // previews, so a preview never runs scheduled() or writes to KV.
+  "previews": {
+    "ai": {
+      "binding": "AI"
+    },
+    "kv_namespaces": [
+      {
+        "binding": "DAILY_TEMPLATE",
+        "id": "0a148b477f20418782bc83163d143b86"
+      }
+    ]
+  }
 }
