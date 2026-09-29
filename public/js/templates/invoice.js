@@ -147,31 +147,31 @@ export default {
               <tr class="border-b border-slate-300">
                 <td class="py-0.5 px-1.5">Live ${animal}, adult, opinionated</td>
                 <td class="text-center py-0.5 px-1.5">1</td>
-                <td class="text-right py-0.5 px-1.5">$0.00</td>
+                <td class="text-right py-0.5 px-1.5">$0.00 <span class="text-slate-500 italic">(comp'd)</span></td>
               </tr>
               <tr class="border-b border-slate-300">
                 <td class="py-0.5 px-1.5">Starter Care Kit (see above)</td>
                 <td class="text-center py-0.5 px-1.5">1</td>
-                <td class="text-right py-0.5 px-1.5">$0.00</td>
+                <td class="text-right py-0.5 px-1.5">$24.99</td>
               </tr>
               <tr class="border-b border-slate-300">
                 <td class="py-0.5 px-1.5">Ventilated crate &amp; bedding</td>
                 <td class="text-center py-0.5 px-1.5">1</td>
-                <td class="text-right py-0.5 px-1.5">$0.00</td>
+                <td class="text-right py-0.5 px-1.5">$89.50</td>
               </tr>
               <tr class="border-b border-slate-300">
                 <td class="py-0.5 px-1.5">Perpetual Sarcasm License (renewal)</td>
                 <td class="text-center py-0.5 px-1.5">1</td>
-                <td class="text-right py-0.5 px-1.5">$0.00</td>
+                <td class="text-right py-0.5 px-1.5">$14.00</td>
               </tr>
               <tr class="border-b-2 border-black">
                 <td class="py-0.5 px-1.5">Emotional support surcharge</td>
                 <td class="text-center py-0.5 px-1.5">1</td>
-                <td class="text-right py-0.5 px-1.5">$0.00</td>
+                <td class="text-right py-0.5 px-1.5">$250.00</td>
               </tr>
               <tr>
                 <td class="py-1 px-1.5 font-black uppercase" colspan="2">Total Due</td>
-                <td class="text-right py-1 px-1.5 font-black">$0.00</td>
+                <td class="text-right py-1 px-1.5 font-black">$378.49</td>
               </tr>
             </tbody>
           </table>
