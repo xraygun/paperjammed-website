@@ -4,6 +4,14 @@
   margin: 0;
 }
 
+/* Counterpart to .no-print: hidden on screen, revealed only in print. Used
+   by the Daily Mystery template's "Cooked" intensity to withhold its own
+   preview (see dailyMystery.js) — the visitor has to actually print to
+   see it. */
+.print-only {
+  display: none;
+}
+
 @media print {
   body {
     background: #ffffff !important;
@@ -15,6 +23,9 @@
   }
   .no-print {
     display: none !important;
+  }
+  .print-only {
+    display: block !important;
   }
   /* The print sheet is nested inside layout wrappers (body.min-h-screen >
      grid container with p-4/md:p-6 and gap-6 > main). Their padding, gaps
@@ -153,4 +164,133 @@
   bottom: 10mm;
   text-align: center;
   pointer-events: none;
+}
+
+/* Temple of Unhinged Testpages — sidebar button only (already inside the
+   .no-print sidebar, so none of this needs its own print handling).
+   Two pieces: the label's per-letter color cycling, and the black
+   starfield + floating emoji layer, both gated on the button's own radio
+   being checked so they only run while this template is selected. */
+.tout-letter {
+  display: inline-block;
+}
+.template-btn:has(input:checked) .tout-letter {
+  animation: dm-letter-cycle 2.6s ease-in-out infinite;
+}
+@keyframes dm-letter-cycle {
+  0%   { color: #e34fee; }
+  20%  { color: #38bdf8; }
+  40%  { color: #fb7185; }
+  60%  { color: #a78bfa; }
+  80%  { color: #fb923c; }
+  100% { color: #e34fee; }
+}
+
+/* Warp-in: plays once every time this button is (re)selected — a
+   radiating light-streak zoom, like the printer just hyperspace-jumped
+   you to the temple. Sits above the starfield (z-index) and fades out
+   right as the starfield itself finishes fading in (see its
+   transition-delay below), so one hands off to the other. */
+.dm-warp {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(191, 219, 254, 0.9) 0deg 1.2deg,
+    transparent 1.2deg 6deg
+  );
+}
+.template-btn:has(input:checked) .dm-warp {
+  animation: dm-warp-seq 1s ease-out 1;
+}
+@keyframes dm-warp-seq {
+  0%   { opacity: 0; transform: scale(0.2); }
+  15%  { opacity: 1; transform: scale(0.6); }
+  70%  { opacity: 1; transform: scale(1.8); }
+  100% { opacity: 0; transform: scale(2.4); }
+}
+
+.dm-starfield-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.6s ease 1s;
+  pointer-events: none;
+  z-index: 1;
+}
+.template-btn:has(input:checked) .dm-starfield-layer {
+  opacity: 1;
+}
+.dm-stars {
+  position: absolute;
+  inset: -20%;
+  background-color: #000;
+  background-repeat: repeat;
+  background-size: 140px 140px;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, #fff, transparent 60%),
+    radial-gradient(1px 1px at 30% 70%, #fff, transparent 60%),
+    radial-gradient(1.5px 1.5px at 55% 15%, #fff, transparent 60%),
+    radial-gradient(1px 1px at 70% 55%, #fff, transparent 60%),
+    radial-gradient(1.5px 1.5px at 85% 80%, #fff, transparent 60%),
+    radial-gradient(1px 1px at 95% 35%, #fff, transparent 60%),
+    radial-gradient(1px 1px at 20% 90%, #fff, transparent 60%),
+    radial-gradient(1px 1px at 45% 40%, #fff, transparent 60%);
+  animation: dm-twinkle 3.2s ease-in-out infinite alternate;
+}
+@keyframes dm-twinkle {
+  0%   { opacity: 0.55; }
+  100% { opacity: 1; }
+}
+.dm-float {
+  position: absolute;
+  transform: translate(0, 0);
+  animation-name: dm-float-drift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.6));
+}
+/* Asteroids-style wraparound: a straight-line drift from one off-screen
+   edge to the opposite one (--sx/--sy to --ex/--ey, set far enough out
+   in dailyMystery.js to fully clear the button), then an instant snap
+   back to the start at the 49.9% -> 50% boundary — no easing across that
+   jump, so it reads as "reappeared on the other side" rather than a
+   visible teleport-slide. */
+@keyframes dm-float-drift {
+  0%    { transform: translate(var(--sx), var(--sy)); }
+  49.9% { transform: translate(var(--ex), var(--ey)); }
+  50%   { transform: translate(var(--sx), var(--sy)); }
+  100%  { transform: translate(var(--ex), var(--ey)); }
+}
+
+/* Intensity readout's top-of-range states (see intensityStatus() in
+   dailyMystery.js) — Warning shakes in place, Unhinged fades/dissolves/
+   reappears in a loop. Both override the plain white readout color. */
+.dm-status-warning {
+  color: #ef4444 !important;
+  animation: dm-shake 0.15s linear infinite;
+}
+@keyframes dm-shake {
+  0%   { transform: translate(0, 0); }
+  20%  { transform: translate(-1px, 1px); }
+  40%  { transform: translate(1px, -1px); }
+  60%  { transform: translate(-1px, -1px); }
+  80%  { transform: translate(1px, 1px); }
+  100% { transform: translate(0, 0); }
+}
+.dm-status-unhinged {
+  animation: dm-dissolve 2.2s ease-in-out infinite;
+}
+@keyframes dm-dissolve {
+  0%   { opacity: 0; filter: blur(2px); }
+  15%  { opacity: 1; filter: blur(0); }
+  55%  { opacity: 1; filter: blur(0); }
+  70%  { opacity: 0; filter: blur(3px); }
+  85%  { opacity: 0; filter: blur(3px); }
+  100% { opacity: 1; filter: blur(0); }
 }

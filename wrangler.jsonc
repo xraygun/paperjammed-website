@@ -11,5 +11,25 @@
       "enabled": true,
       "invocation_logs": true
     }
-  }
+  },
+
+  // Workers AI — generates "Temple of Unhinged Testpages" template's daily
+  // content. Free-tier binding, no separate API key needed.
+  "ai": {
+    "binding": "AI"
+  },
+
+  // Cron Trigger — fires scheduled() in src/index.js once a day. This is
+  // the ONLY code path that calls the model; nothing a visitor does can
+  // trigger a generation. 9am UTC, adjust to taste.
+  "triggers": {
+    "crons": ["0 9 * * *"]
+  },
+
+  "kv_namespaces": [
+    {
+      "binding": "DAILY_TEMPLATE",
+      "id": "e7239e2b3d2f4b24af54c91d46a6ecf8"
+    }
+  ]
 }
