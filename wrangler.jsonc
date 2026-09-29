@@ -11,5 +11,41 @@
       "enabled": true,
       "invocation_logs": true
     }
+  },
+
+  // Workers AI — generates "Temple of Unhinged Testpages" template's daily
+  // content. Free-tier binding, no separate API key needed.
+  "ai": {
+    "binding": "AI"
+  },
+
+  // Cron Trigger — fires scheduled() in src/index.js once a day. This is
+  // the ONLY code path that calls the model; nothing a visitor does can
+  // trigger a generation. 9am UTC, adjust to taste.
+  "triggers": {
+    "crons": ["0 9 * * *"]
+  },
+
+  "kv_namespaces": [
+    {
+      "binding": "DAILY_TEMPLATE",
+      "id": "0a148b477f20418782bc83163d143b86"
+    }
+  ],
+
+  // Branch/PR preview builds run `wrangler preview`, which refuses to run
+  // without this block. Previews do NOT inherit top-level bindings, so the
+  // ones the site reads are repeated here. Cron triggers can't be set on
+  // previews, so a preview never runs scheduled() or writes to KV.
+  "previews": {
+    "ai": {
+      "binding": "AI"
+    },
+    "kv_namespaces": [
+      {
+        "binding": "DAILY_TEMPLATE",
+        "id": "0a148b477f20418782bc83163d143b86"
+      }
+    ]
   }
 }

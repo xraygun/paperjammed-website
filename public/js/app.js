@@ -14,7 +14,11 @@ const state = {
   certTechName: '',
   orderAnimal: '',
   orderRecipient: '',
-  orderAddress: ''
+  orderAddress: '',
+  dailyTemplateData: null,
+  dailyHash: String(Math.floor(Math.random() * 1e9)),
+  dailyIntensity: 0,
+  dailySwapIndex: {}
 };
 
 // ----------------------------------------------------------------------------
@@ -186,11 +190,17 @@ function resetShrinkToFit() {
 function applyShrinkToFit() {
   const t = templates[state.currentTemplateKey];
   resetShrinkToFit();
-  if (!t || t.multiPage) return; // never scale multi-page templates
+  if (!t) return;
 
   const printSheet = document.getElementById('printSheet');
   const contentEl = document.getElementById('templateContent');
   if (!printSheet || !contentEl) return;
+
+  // Never scale multi-page templates. t.multiPage covers templates that
+  // are ALWAYS multi-page; printSheet's own live class also covers Daily
+  // Mystery's Unhinged state, which goes multi-page dynamically (see
+  // renderDailyMysteryIfActive) without t.multiPage ever being true.
+  if (t.multiPage || printSheet.classList.contains('multi-page-mode')) return;
 
   const availableHeight = printSheet.clientHeight - 2 * mmToPx(10) - SHRINK_FOOTER_RESERVE_PX;
   const naturalHeight = contentEl.scrollHeight;
@@ -226,21 +236,38 @@ function renderSidebar() {
       : '';
     const iconHtml = t.icon ? `<i class="fa-solid ${t.icon} text-xs"></i> ` : '';
     const labelSpanClass = t.labelTextClass ? `${t.labelTextClass} font-bold` : '';
+    const labelInner = typeof t.labelHtml === 'function' ? t.labelHtml(state) : t.label;
+
+    // Optional per-template flourish: a background layer behind the label
+    // (currently only Daily Mystery's starfield). Sits under the label via
+    // z-index; pointer-events:none so it never blocks the click-to-select.
+    // The warp-in overlay is a SIBLING of #starfield-${key}, not a child —
+    // refreshDailyStarfield() replaces that element's innerHTML wholesale
+    // on every hash/intensity change, which would delete the warp div too
+    // if it lived inside it.
+    const overlayHtml = typeof t.starfieldHtml === 'function'
+      ? `<div class="dm-warp"></div><div class="dm-starfield-layer" id="starfield-${key}">${t.starfieldHtml(state)}</div>`
+      : '';
 
     const controlsHtml = typeof t.controlsHtml === 'function'
       ? `<div id="controls-${key}" style="display: none;">${t.controlsHtml(state)}</div>`
       : '';
 
+    const descriptionHtml = t.description
+      ? `<p class="text-xs text-slate-300 mt-0.5">${t.description}</p>`
+      : '';
+
     return `
       <div>
-        <label onclick="setTemplate('${key}')" class="template-btn flex items-start gap-3 p-3 rounded-lg border ${t.borderClasses} cursor-pointer transition">
-          <input type="radio" name="template" value="${key}" ${key === state.currentTemplateKey ? 'checked' : ''} class="mt-1 ${t.radioAccent}">
-          <div class="w-full">
+        <label onclick="setTemplate('${key}')" class="template-btn relative overflow-hidden flex items-start gap-3 p-3 rounded-lg border ${t.borderClasses} cursor-pointer transition">
+          ${overlayHtml}
+          <input type="radio" name="template" value="${key}" ${key === state.currentTemplateKey ? 'checked' : ''} class="relative z-10 mt-1 ${t.radioAccent}">
+          <div class="relative z-10 w-full">
             <div class="font-medium text-white flex items-center justify-between gap-2">
-              <span class="flex items-center gap-1.5 ${labelSpanClass}">${iconHtml}${t.label}</span>
+              <span class="flex items-center gap-1.5 ${labelSpanClass}">${iconHtml}${labelInner}</span>
               ${badgeHtml}
             </div>
-            <p class="text-xs text-slate-300 mt-0.5">${t.description}</p>
+            ${descriptionHtml}
           </div>
         </label>
         ${controlsHtml}
@@ -404,6 +431,143 @@ function updateCustomNote() {
 }
 
 // ----------------------------------------------------------------------------
+// Daily Mystery content (fetched once — the server only regenerates it via
+// its own Cron Trigger, this just reads whatever's currently cached)
+// ----------------------------------------------------------------------------
+async function loadDailyTemplate() {
+  try {
+    const res = await fetch('/api/daily-template');
+    if (!res.ok) return; // 404 before the first generation has run — DEFAULT_CONTENT covers it
+    const data = await res.json().catch(() => null);
+    if (!data) return;
+    state.dailyTemplateData = data;
+    renderDailyMysteryIfActive();
+  } catch (e) {
+    // Offline/network failure — the template's own DEFAULT_CONTENT covers this.
+  }
+}
+
+// The randomness hash/intensity controls both need a full re-render since
+// they change border/font/size and (at "Cooked") inject markup, not just
+// one text node.
+//
+// At Unhinged (100%) specifically, dailyMystery.js's render() switches to
+// a genuine two-page print structure (blank page 1, real content page 2 —
+// so a quick glance at print preview shows nothing) instead of the usual
+// single hidden page. #printSheet's multi-page-mode class normally only
+// gets set once, in setTemplate(), off the template's static multiPage
+// flag — but this template goes multi-page dynamically based on the
+// intensity slider, which can change without setTemplate() ever running
+// again, so it has to be re-checked here on every daily-mystery render.
+function renderDailyMysteryIfActive() {
+  if (state.currentTemplateKey === 'dailyMystery') {
+    const contentEl = document.getElementById('templateContent');
+    if (contentEl) contentEl.innerHTML = templates.dailyMystery.render(state);
+
+    const isUnhinged = (state.dailyIntensity ?? 0) >= 100;
+    const printSheet = document.getElementById('printSheet');
+    const footerContainer = document.getElementById('globalFooterContainer');
+    if (printSheet) printSheet.classList.toggle('multi-page-mode', isUnhinged);
+    if (footerContainer) footerContainer.style.display = isUnhinged ? 'none' : 'block';
+  }
+}
+
+// Duplicated from dailyMystery.js's own copy on purpose — app.js never
+// imports a specific template file (see templates/index.js). Same 0-100
+// continuous slider, same four named bands at the same thresholds.
+const DAILY_INTENSITY_LABELS = ['Rare', 'Medium', 'Well Done', 'Cooked'];
+function dailyIntensityBand(pct) {
+  if (pct >= 75) return 3;
+  if (pct >= 50) return 2;
+  if (pct >= 25) return 1;
+  return 0;
+}
+function dailyIntensityStatus(pct) {
+  if (pct >= 100) return { text: 'Unhinged', variant: 'unhinged' };
+  if (pct >= 85) return { text: 'Warning', variant: 'warning' };
+  return { text: DAILY_INTENSITY_LABELS[dailyIntensityBand(pct)], variant: '' };
+}
+
+// The sidebar button's starfield is keyed off (hash, intensity) too, so
+// both controls need to refresh it, not just the print-sheet re-render.
+function refreshDailyStarfield() {
+  const el = document.getElementById('starfield-dailyMystery');
+  if (el) el.innerHTML = templates.dailyMystery.starfieldHtml(state);
+}
+
+function handleDailyHashChange(val) {
+  state.dailyHash = val;
+  renderDailyMysteryIfActive();
+  refreshDailyStarfield();
+}
+
+function handleDailyHashRefresh() {
+  const newHash = String(Math.floor(Math.random() * 1e9));
+  state.dailyHash = newHash;
+  const hashInput = document.getElementById('dailyHashInput');
+  if (hashInput) hashInput.value = newHash;
+  renderDailyMysteryIfActive();
+  refreshDailyStarfield();
+}
+
+function handleDailyIntensityChange(val) {
+  let num = parseInt(val, 10);
+  if (isNaN(num) || num < 0) num = 0;
+  if (num > 100) num = 100;
+  state.dailyIntensity = num;
+
+  const statusEl = document.getElementById('dailyIntensityStatus');
+  if (statusEl) {
+    const status = dailyIntensityStatus(num);
+    statusEl.textContent = status.text;
+    statusEl.classList.remove('dm-status-warning', 'dm-status-unhinged');
+    if (status.variant) statusEl.classList.add(`dm-status-${status.variant}`);
+  }
+
+  renderDailyMysteryIfActive();
+  refreshDailyStarfield();
+}
+
+// Every 3s, picks one or more random swappable words (see dailyMystery.js's
+// applySwaps/state.dailySwapIndex) and bumps each to a DIFFERENT synonym —
+// how many at once scales with the intensity slider, so Cooked genuinely
+// rewrites multiple words per tick instead of just one. Border/font stay
+// hash-only (no flicker); this timer only ever touches wording. Runs
+// forever in the background; it's a no-op render whenever some other
+// template is active, so nothing needs to start/stop it.
+const DAILY_SWAP_INTERVAL_MS = 3000;
+
+function tickDailySwap() {
+  const swaps = state.dailyTemplateData && state.dailyTemplateData.swaps;
+  if (!swaps) return false;
+  const allKeys = Object.keys(swaps);
+  if (allKeys.length === 0) return false;
+
+  const wantCount = 1 + Math.floor(state.dailyIntensity / 34);
+  const keys = allKeys.sort(() => Math.random() - 0.5).slice(0, wantCount);
+
+  let changedAny = false;
+  keys.forEach((key) => {
+    const options = swaps[key];
+    if (!options || options.length < 2) return;
+    const current = state.dailySwapIndex[key] || 0;
+    let next = current;
+    while (next === current) next = Math.floor(Math.random() * options.length);
+    state.dailySwapIndex[key] = next;
+    changedAny = true;
+  });
+  return changedAny;
+}
+
+function scheduleDailySwap() {
+  setInterval(() => {
+    if (state.currentTemplateKey === 'dailyMystery' && tickDailySwap()) {
+      renderDailyMysteryIfActive();
+    }
+  }, DAILY_SWAP_INTERVAL_MS);
+}
+
+// ----------------------------------------------------------------------------
 // Boot
 // ----------------------------------------------------------------------------
 function initApp() {
@@ -413,6 +577,8 @@ function initApp() {
   renderSidebar();
   setTemplate(state.currentTemplateKey);
   loadPrintCount();
+  loadDailyTemplate();
+  scheduleDailySwap();
 }
 
 // Expose the handlers referenced by inline HTML attributes (onclick/oninput)
@@ -426,6 +592,9 @@ window.handleCertTechNameChange = handleCertTechNameChange;
 window.handleOrderAnimalChange = handleOrderAnimalChange;
 window.handleOrderRecipientChange = handleOrderRecipientChange;
 window.handleOrderAddressChange = handleOrderAddressChange;
+window.handleDailyHashChange = handleDailyHashChange;
+window.handleDailyHashRefresh = handleDailyHashRefresh;
+window.handleDailyIntensityChange = handleDailyIntensityChange;
 window.updateCustomNote = updateCustomNote;
 window.handlePrintAction = handlePrintAction;
 

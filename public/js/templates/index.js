@@ -22,6 +22,7 @@ import alignment from './alignment.js';
 import invoice from './invoice.js';
 import spaceball from './spaceball.js';
 import allyourbase from './allyourbase.js';
+import dailyMystery from './dailyMystery.js';
 
 // Order controls the order they appear in the sidebar.
 export const templateOrder = [
@@ -36,7 +37,8 @@ export const templateOrder = [
   'allyourbase' ,
   'alignment',
   'invoice',
-  'spaceball'
+  'spaceball',
+  'dailyMystery'
 ];
 
 export const templates = {
@@ -51,5 +53,6 @@ export const templates = {
   allyourbase,
   alignment,
   invoice,
-  spaceball
+  spaceball,
+  dailyMystery
 };
