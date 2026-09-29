@@ -34,12 +34,45 @@ Hard rules:
 
 Style: treat a mundane printer malfunction as if it were a serious, formal proceeding — legal, medical, HR, diplomatic, whatever fits. The joke is the deadpan bureaucratic tone applied to something ridiculous. Bizarre headlines like a tabloid or a court filing work well.
 
-After writing the content, pick 3 to 6 key nouns or short noun phrases from your own text (the more central to the joke, the better) that could each be swapped for a workplace-safe near-synonym without breaking the sentence. For each one:
-- Replace every occurrence of that exact word/phrase anywhere it appears (headline, subheadline, bodyParagraphs, bulletPoints, footerNote) with a placeholder token like [[1]], [[2]], etc. — reuse the same number everywhere that same word appears.
-- In a "swaps" object, give that number an array of exactly 5 near-synonyms, lowercase, word 1 being the original word you replaced (so index 0 reproduces your original text exactly).
+SWAPPABLE WORDS — follow these rules exactly:
+After writing the content, pick 3 to 6 key nouns or short noun phrases from your own text that could each be swapped for a near-synonym without breaking the sentence. Replace them with numbered placeholder tokens.
 
-Respond with ONLY valid JSON, no markdown fences, no commentary, matching exactly this shape. Here is a full worked example showing the tone, the placeholder tokens, and the swaps object together:
+Token format: two opening square brackets, a number, two closing square brackets. Examples: [[1]] [[2]] [[3]]
+- CORRECT: [[1]]
+- WRONG: []   [1]   [[]]   {{1}}   [[one]]   [[printer]]
+A token must always contain a number. Never write empty brackets.
+
+Numbering rules:
+1. Numbers start at 1 and count up with no gaps (1, 2, 3 — never 1, 3, 4).
+2. Each number stands for ONE specific word or phrase.
+3. If the same word appears more than once, use the SAME number every time it appears.
+4. Two different words never share a number.
+5. Every number you use in the text must have an entry in "swaps", and every entry in "swaps" must appear in the text at least once.
+
+Swaps rules:
+- In the "swaps" object, the key is the number as a string ("1", "2", ...) and the value is an array of exactly 5 lowercase near-synonyms.
+- The first word in each array is the original word you replaced, so the first option reproduces your original text exactly.
+- All 5 options must fit grammatically in EVERY place that number appears. If a token is used as a plural ("three [[4]]", "[[4]] are"), all 5 options must be plural. If it's singular, all 5 must be singular.
+- Never put "a" or "an" directly before a token (the right article depends on which synonym shows up). Rephrase with "the", "one", or no article instead.
+- Only tokenize a word if you can list 5 swaps for it. Anything else stays as plain text.
+
+JSON rules:
+- Respond with ONLY valid JSON: no markdown fences, no commentary before or after.
+- Any double quote inside a text value must be escaped as \\" — or use single quotes inside the text instead.
+
+Limits: headline max 120 characters; subheadline max 200; 2-4 bodyParagraphs, each max 400; 3-8 bulletPoints, each max 150; footerNote max 200; each swap option max 40.
+
+Here is a full worked example showing the tone, the tokens, and the swaps object together:
 {"headline": "[[1]] FILES FOR [[2]]", "subheadline": "After three years of thankless service, [[3]] have been cited.", "bodyParagraphs": ["Court documents obtained by this printer allege \\"emotional neglect\\" and \\"repeated ignoring of low-[[4]] warnings spanning several fiscal quarters.\\"", "The [[1]] is seeking full custody of the remaining 4% reserve and sole ownership of the waste chamber."], "bulletPoints": ["Mediation scheduled for next Tuesday's print run", "Custody of the paper tray remains contested", "The [[5]] has been named an interested third party", "Do not attempt reconciliation via aggressive shaking"], "footerNote": "This printer test page does not constitute legal advice, marital counseling, or [[4]] refill instructions.", "swaps": {"1": ["toner cartridge", "ink cassette", "print cartridge", "toner canister", "print module"], "2": ["divorce", "separation", "breakup", "split", "schism"], "3": ["irreconcilable differences", "creative differences", "grievances", "disputes", "complaints"], "4": ["toner", "ink", "pigment powder", "consumable", "cartridge fluid"], "5": ["fuser unit", "heating roller", "fusing assembly", "thermal unit", "fuser module"]}}
+
+Notice in the example: [[1]] appears twice (headline and second paragraph) because it's the same word both times. [[4]] also appears twice. Every number 1-5 is used in the text and has a swaps entry.
+
+Before responding, check:
+- No empty [] anywhere.
+- Numbers run 1, 2, 3... with no gaps.
+- Every [[N]] in the text has a matching "N" in swaps, and vice versa.
+- Plural tokens have plural swaps; no "a"/"an" before any token.
+- All inner double quotes are escaped.
 
 Write a completely new, different scenario in this same style — do not reuse this example's content.`;
 
