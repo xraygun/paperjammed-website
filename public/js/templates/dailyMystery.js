@@ -13,9 +13,15 @@
 // the visitor can edit or reroll) and state.dailyIntensity (a 0-3 "how
 // would you like your template?" slider). The hash seeds a deterministic
 // PRNG so the same hash always looks the same; intensity scales how far
-// font size / family / border are allowed to drift from normal. This is
-// intentionally cosmetic only — the actual text content stays whatever
-// the daily generation produced.
+// font size / family / border are allowed to drift from normal.
+//
+// On top of THAT, the daily content can itself contain [[N]] placeholder
+// tokens (see the swaps object src/index.js asks the model for) — a
+// handful of nouns the model marked as swappable, each with 5 synonym
+// options. state.dailyTick (advanced on a timer by app.js, cadence tied
+// to the same intensity slider) feeds into the same seeded-PRNG scheme to
+// pick which synonym shows, so at higher intensity the wording visibly
+// rotates every few seconds without ever touching the underlying AI text.
 
 const DEFAULT_CONTENT = {
   headline: 'DIAGNOSTIC CONTENT LOADING',
@@ -28,7 +34,8 @@ const DEFAULT_CONTENT = {
     'Try a different template in the meantime',
     'Yell at the nearest printer for solidarity'
   ],
-  footerNote: 'Nothing to see here. Yet.'
+  footerNote: 'Nothing to see here. Yet.',
+  swaps: {}
 };
 
 // Slider labels — also duplicated in app.js's live status-text update.
@@ -64,6 +71,22 @@ function mulberry32(seed) {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+}
+
+// Replaces every [[N]] token in text with one of swaps[N]'s synonyms,
+// picked deterministically from seedBase + that token's own number — so
+// every occurrence of the same [[N]] across headline/paragraphs/bullets
+// picks the same word, and a given (hash, tick) always looks the same.
+// A token with no matching swaps entry (older cached content, a model
+// slip) just disappears rather than leaving a raw [[N]] on the page.
+function applySwaps(text, swaps, seedBase) {
+  if (!text) return text;
+  return String(text).replace(/\[\[(\d+)\]\]/g, (_match, key) => {
+    const options = swaps && swaps[key];
+    if (!options || !options.length) return '';
+    const rand = mulberry32(stringToSeed(`${seedBase}::${key}`));
+    return options[Math.floor(rand() * options.length)];
+  });
 }
 
 // Intensity 0-3 -> how far from baseline the randomized styling drifts.
@@ -170,7 +193,7 @@ export default {
             <i class="fa-solid fa-dice"></i>
           </button>
         </div>
-        <p class="text-[9px] text-fuchsia-300/60 italic">Seeds the page's visual weirdness. Not fully explained or understood.</p>
+        <p class="text-[9px] text-fuchsia-300/60 italic">Seeds the page's visual weirdness — and reshuffles a few of today's words. Not fully explained or understood.</p>
 
         <div class="pt-1">
           <label for="dailyIntensityInput" class="text-[11px] font-bold text-fuchsia-300 uppercase tracking-wider block mb-1">How would you like your template?</label>
@@ -190,12 +213,15 @@ export default {
     const style = computeRandomStyle(state.dailyHash, intensityLevel);
     const cooked = intensityLevel === 3 ? computeCookedExtras(state.dailyHash) : null;
 
+    const swapSeed = `${state.dailyHash == null ? '' : state.dailyHash}::t${state.dailyTick ?? 0}`;
+    const sw = (text) => applySwaps(text, c.swaps, swapSeed);
+
     const paragraphs = (c.bodyParagraphs || [])
-      .map((p) => `<p class="text-[10px] leading-relaxed text-slate-800 mb-1.5">${esc(p)}</p>`)
+      .map((p) => `<p class="text-[10px] leading-relaxed text-slate-800 mb-1.5">${esc(sw(p))}</p>`)
       .join('');
 
     const bullets = (c.bulletPoints || [])
-      .map((b) => `<li>${esc(b)}</li>`)
+      .map((b) => `<li>${esc(sw(b))}</li>`)
       .join('');
 
     const warningBanner = cooked
@@ -218,8 +244,8 @@ export default {
           ${warningBanner}
           <div class="border-b-4 border-black pb-1 mb-2 text-center">
             <span class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-600 block">AUTOMATED DAILY DIAGNOSTIC — CONTENT MAY VARY WITHOUT WARNING</span>
-            <h1 class="text-lg font-black uppercase tracking-widest text-slate-950 my-1 leading-tight">${esc(c.headline)}</h1>
-            <p class="text-[10px] italic text-slate-700">${esc(c.subheadline)}</p>
+            <h1 class="text-lg font-black uppercase tracking-widest text-slate-950 my-1 leading-tight">${esc(sw(c.headline))}</h1>
+            <p class="text-[10px] italic text-slate-700">${esc(sw(c.subheadline))}</p>
           </div>
 
           <div class="space-y-1">${paragraphs}</div>
@@ -230,7 +256,7 @@ export default {
           </div>
 
           <div class="border-t-2 border-black mt-2 pt-1 text-[9px] text-slate-800 leading-tight italic">
-            ${esc(c.footerNote)}
+            ${esc(sw(c.footerNote))}
           </div>
         </div>
       </div>

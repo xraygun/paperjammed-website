@@ -17,7 +17,8 @@ const state = {
   orderAddress: '',
   dailyTemplateData: null,
   dailyHash: String(Math.floor(Math.random() * 1e9)),
-  dailyIntensity: 0
+  dailyIntensity: 0,
+  dailyTick: 0
 };
 
 // ----------------------------------------------------------------------------
@@ -465,6 +466,27 @@ function handleDailyIntensityChange(val) {
   renderDailyMysteryIfActive();
 }
 
+// Advances state.dailyTick on a timer so the daily content's swappable
+// words (see dailyMystery.js's applySwaps) keep rotating on their own —
+// cadence speeds up with the intensity slider, from a slow drift at Rare
+// to a genuine "never the same for more than a couple seconds" at Cooked.
+// Border/font are deliberately NOT tied to this timer — only the hash
+// (manual reroll) changes those, so the page doesn't visually twitch.
+// Runs forever in the background; it's a no-op render whenever some other
+// template is active, so nothing needs to start/stop it.
+const DAILY_TICK_INTERVAL_MS = [10000, 7000, 4000, 2000];
+
+function scheduleDailyTick() {
+  const intervalMs = DAILY_TICK_INTERVAL_MS[state.dailyIntensity] || DAILY_TICK_INTERVAL_MS[0];
+  setTimeout(() => {
+    if (state.currentTemplateKey === 'dailyMystery') {
+      state.dailyTick = (state.dailyTick + 1) % 1000000;
+      renderDailyMysteryIfActive();
+    }
+    scheduleDailyTick();
+  }, intervalMs);
+}
+
 // ----------------------------------------------------------------------------
 // Boot
 // ----------------------------------------------------------------------------
@@ -476,6 +498,7 @@ function initApp() {
   setTemplate(state.currentTemplateKey);
   loadPrintCount();
   loadDailyTemplate();
+  scheduleDailyTick();
 }
 
 // Expose the handlers referenced by inline HTML attributes (onclick/oninput)
