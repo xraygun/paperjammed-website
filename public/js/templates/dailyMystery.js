@@ -33,7 +33,7 @@ const DEFAULT_CONTENT = {
   headline: 'DIAGNOSTIC CONTENT LOADING',
   subheadline: "Today's mystery hasn't printed itself into existence yet.",
   bodyParagraphs: [
-    "This template pulls fresh, computer-generated nonsense once a day. If you're seeing this placeholder, either the daily job hasn't run yet or the connection to fetch it failed."
+    "This template pulls fresh nonsense once a day. If you're seeing this placeholder, either the daily job hasn't run yet or the connection to fetch it failed."
   ],
   bulletPoints: [
     'Reload the page in a moment',
@@ -332,6 +332,12 @@ export default {
       })
       .join(' ');
     return `<span>${words}</span>`;
+  },
+
+  // At Unhinged the print layout becomes two pages (see render()); app.js
+  // reads this to set #printSheet's multi-page mode to match.
+  isMultiPage(state) {
+    return (state.dailyIntensity ?? 0) >= 100;
   },
 
   // Sidebar-only: the black "window" + floating emoji behind the button,
