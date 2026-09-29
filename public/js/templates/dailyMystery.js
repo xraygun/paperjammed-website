@@ -101,6 +101,11 @@ const FONT_POOL = [
 ];
 
 const BORDER_STYLES = ['solid', 'dashed', 'dotted', 'double'];
+const ALIGN_POOL = ['center', 'justify'];
+
+// Objects "flying" through the selected sidebar button's black window.
+const FLOAT_EMOJI = ['⏰', '🧙', '🐇', '🚽', '🪠', '🔮', '🧦', '🪑'];
+const FLOAT_COUNT_BY_INTENSITY = [2, 4, 6, 9];
 
 // "Cooked" (intensity 3) extras: a combustion warning banner and a few
 // lines of real-looking code spilled onto the page at odd angles. Purely
@@ -157,13 +162,46 @@ function computeRandomStyle(hash, intensityLevel) {
     ? BORDER_STYLES[Math.floor(rand() * BORDER_STYLES.length)]
     : 'solid';
 
-  return { fontScale, fontFamily, borderWidth, borderStyle };
+  // Letter-spacing and paragraph alignment barely move at Rare, but by
+  // Cooked the body text visibly sprawls and goes ragged — "ramblings of
+  // a printer gone mad" rather than just a slightly bigger font.
+  const letterSpacing = +(rand() * 0.14 * m).toFixed(3);
+  const textAlign = rand() < m * 0.55 ? ALIGN_POOL[Math.floor(rand() * ALIGN_POOL.length)] : 'left';
+
+  return { fontScale, fontFamily, borderWidth, borderStyle, letterSpacing, textAlign };
+}
+
+function starfieldHtml(hash, intensityLevel) {
+  const count = FLOAT_COUNT_BY_INTENSITY[intensityLevel] ?? FLOAT_COUNT_BY_INTENSITY[0];
+  const rand = mulberry32(stringToSeed(`${hash == null ? '' : hash}::starfield::${intensityLevel}`));
+
+  let floaters = '';
+  for (let i = 0; i < count; i++) {
+    const emoji = FLOAT_EMOJI[Math.floor(rand() * FLOAT_EMOJI.length)];
+    const left = Math.round(rand() * 90) + 5;
+    const top = Math.round(rand() * 80) + 8;
+    const size = 12 + Math.round(rand() * 10);
+    const duration = 9 + Math.round(rand() * 12);
+    // Negative delay starts the animation already mid-cycle, so floaters
+    // are in motion from the first frame instead of freezing at 0% until
+    // their delay elapses.
+    const negDelay = -Math.round(rand() * duration);
+    const tx1 = Math.round(rand() * 500 - 250);
+    const ty1 = Math.round(rand() * 400 - 200);
+    const tx2 = Math.round(rand() * 500 - 250);
+    const ty2 = Math.round(rand() * 400 - 200);
+    const tx3 = Math.round(rand() * 500 - 250);
+    const ty3 = Math.round(rand() * 400 - 200);
+    floaters += `<span class="dm-float" style="left:${left}%; top:${top}%; font-size:${size}px; animation-duration:${duration}s; animation-delay:${negDelay}s; --tx1:${tx1}%; --ty1:${ty1}%; --tx2:${tx2}%; --ty2:${ty2}%; --tx3:${tx3}%; --ty3:${ty3}%;">${emoji}</span>`;
+  }
+
+  return `<div class="dm-stars"></div>${floaters}`;
 }
 
 export default {
   key: 'dailyMystery',
   label: 'Temple of Unhinged Testpages',
-  description: "A brand new nonsense diagnostic sheet, written by a robot, once a day. Nobody knows what it'll say next — including us.",
+  description: "It's never too late to change, but this page will before you can print it.",
   icon: 'fa-dice',
   badge: { text: 'DAILY', className: 'bg-fuchsia-500 text-white' },
   borderClasses: 'border-fuchsia-500/50 hover:border-fuchsia-400 bg-fuchsia-950/20 hover:bg-fuchsia-900/30',
@@ -171,6 +209,27 @@ export default {
   labelTextClass: 'text-fuchsia-300',
   configType: 'bw',
   multiPage: false,
+
+  // Sidebar-only: wraps each letter of the label so it can be color-cycled
+  // by CSS while this button is selected (see .tout-letter in style.css).
+  // A fixed per-letter stagger, not randomness — this runs once at boot.
+  labelHtml() {
+    return this.label
+      .split('')
+      .map((ch, i) => {
+        if (ch === ' ') return ' ';
+        const delay = ((i * 173) % 2600) / 1000;
+        return `<span class="tout-letter" style="animation-delay:${delay}s">${esc(ch)}</span>`;
+      })
+      .join('');
+  },
+
+  // Sidebar-only: the black "window" + floating emoji behind the button,
+  // shown only while selected (see .dm-starfield-layer). Re-rendered by
+  // app.js on hash reroll and intensity change (both feed its seed).
+  starfieldHtml(state) {
+    return starfieldHtml(state.dailyHash, state.dailyIntensity ?? 0);
+  },
 
   controlsHtml(state) {
     const hash = state.dailyHash ?? '';
@@ -214,13 +273,15 @@ export default {
     const cooked = intensityLevel === 3 ? computeCookedExtras(state.dailyHash) : null;
 
     const sw = (text) => applySwaps(text, c.swaps, state.dailySwapIndex);
+    const proseStyle = `letter-spacing:${style.letterSpacing}em; text-align:${style.textAlign};`;
+    const listItemStyle = `letter-spacing:${style.letterSpacing}em;`;
 
     const paragraphs = (c.bodyParagraphs || [])
-      .map((p) => `<p class="text-[10px] leading-relaxed text-slate-800 mb-1.5">${esc(sw(p))}</p>`)
+      .map((p) => `<p class="text-[10px] leading-relaxed text-slate-800 mb-1.5" style="${proseStyle}">${esc(sw(p))}</p>`)
       .join('');
 
     const bullets = (c.bulletPoints || [])
-      .map((b) => `<li>${esc(sw(b))}</li>`)
+      .map((b) => `<li style="${listItemStyle}">${esc(sw(b))}</li>`)
       .join('');
 
     const warningBanner = cooked
@@ -244,7 +305,7 @@ export default {
           <div class="border-b-4 border-black pb-1 mb-2 text-center">
             <span class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-600 block">AUTOMATED DAILY DIAGNOSTIC — CONTENT MAY VARY WITHOUT WARNING</span>
             <h1 class="text-lg font-black uppercase tracking-widest text-slate-950 my-1 leading-tight">${esc(sw(c.headline))}</h1>
-            <p class="text-[10px] italic text-slate-700">${esc(sw(c.subheadline))}</p>
+            <p class="text-[10px] italic text-slate-700" style="${proseStyle}">${esc(sw(c.subheadline))}</p>
           </div>
 
           <div class="space-y-1">${paragraphs}</div>
@@ -254,7 +315,7 @@ export default {
             <ul class="text-[10px] leading-relaxed text-slate-800 space-y-0.5 pl-4 list-disc">${bullets}</ul>
           </div>
 
-          <div class="border-t-2 border-black mt-2 pt-1 text-[9px] text-slate-800 leading-tight italic">
+          <div class="border-t-2 border-black mt-2 pt-1 text-[9px] text-slate-800 leading-tight italic" style="${proseStyle}">
             ${esc(sw(c.footerNote))}
           </div>
         </div>

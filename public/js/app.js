@@ -230,6 +230,14 @@ function renderSidebar() {
       : '';
     const iconHtml = t.icon ? `<i class="fa-solid ${t.icon} text-xs"></i> ` : '';
     const labelSpanClass = t.labelTextClass ? `${t.labelTextClass} font-bold` : '';
+    const labelInner = typeof t.labelHtml === 'function' ? t.labelHtml(state) : t.label;
+
+    // Optional per-template flourish: a background layer behind the label
+    // (currently only Daily Mystery's starfield). Sits under the label via
+    // z-index; pointer-events:none so it never blocks the click-to-select.
+    const overlayHtml = typeof t.starfieldHtml === 'function'
+      ? `<div class="dm-starfield-layer" id="starfield-${key}">${t.starfieldHtml(state)}</div>`
+      : '';
 
     const controlsHtml = typeof t.controlsHtml === 'function'
       ? `<div id="controls-${key}" style="display: none;">${t.controlsHtml(state)}</div>`
@@ -237,11 +245,12 @@ function renderSidebar() {
 
     return `
       <div>
-        <label onclick="setTemplate('${key}')" class="template-btn flex items-start gap-3 p-3 rounded-lg border ${t.borderClasses} cursor-pointer transition">
-          <input type="radio" name="template" value="${key}" ${key === state.currentTemplateKey ? 'checked' : ''} class="mt-1 ${t.radioAccent}">
-          <div class="w-full">
+        <label onclick="setTemplate('${key}')" class="template-btn relative overflow-hidden flex items-start gap-3 p-3 rounded-lg border ${t.borderClasses} cursor-pointer transition">
+          ${overlayHtml}
+          <input type="radio" name="template" value="${key}" ${key === state.currentTemplateKey ? 'checked' : ''} class="relative z-10 mt-1 ${t.radioAccent}">
+          <div class="relative z-10 w-full">
             <div class="font-medium text-white flex items-center justify-between gap-2">
-              <span class="flex items-center gap-1.5 ${labelSpanClass}">${iconHtml}${t.label}</span>
+              <span class="flex items-center gap-1.5 ${labelSpanClass}">${iconHtml}${labelInner}</span>
               ${badgeHtml}
             </div>
             <p class="text-xs text-slate-300 mt-0.5">${t.description}</p>
@@ -438,9 +447,17 @@ function renderDailyMysteryIfActive() {
 // imports a specific template file (see templates/index.js).
 const DAILY_INTENSITY_LABELS = ['Rare', 'Medium', 'Well Done', 'Cooked'];
 
+// The sidebar button's starfield is keyed off (hash, intensity) too, so
+// both controls need to refresh it, not just the print-sheet re-render.
+function refreshDailyStarfield() {
+  const el = document.getElementById('starfield-dailyMystery');
+  if (el) el.innerHTML = templates.dailyMystery.starfieldHtml(state);
+}
+
 function handleDailyHashChange(val) {
   state.dailyHash = val;
   renderDailyMysteryIfActive();
+  refreshDailyStarfield();
 }
 
 function handleDailyHashRefresh() {
@@ -449,6 +466,7 @@ function handleDailyHashRefresh() {
   const hashInput = document.getElementById('dailyHashInput');
   if (hashInput) hashInput.value = newHash;
   renderDailyMysteryIfActive();
+  refreshDailyStarfield();
 }
 
 function handleDailyIntensityChange(val) {
@@ -464,32 +482,39 @@ function handleDailyIntensityChange(val) {
   if (cookedNoteEl) cookedNoteEl.style.display = num === 3 ? 'block' : 'none';
 
   renderDailyMysteryIfActive();
+  refreshDailyStarfield();
 }
 
-// Every 3s, picks ONE random swappable word (see dailyMystery.js's
-// applySwaps/state.dailySwapIndex) and bumps it to a DIFFERENT synonym —
-// so the page always has exactly one word quietly changing, independent
-// of the intensity slider (that only controls border/font drift, tied to
-// the hash, not this timer — so the page doesn't visually twitch too).
-// Runs forever in the background; it's a no-op render whenever some other
+// Every 3s, picks one or more random swappable words (see dailyMystery.js's
+// applySwaps/state.dailySwapIndex) and bumps each to a DIFFERENT synonym —
+// how many at once scales with the intensity slider, so Cooked genuinely
+// rewrites multiple words per tick instead of just one. Border/font stay
+// hash-only (no flicker); this timer only ever touches wording. Runs
+// forever in the background; it's a no-op render whenever some other
 // template is active, so nothing needs to start/stop it.
 const DAILY_SWAP_INTERVAL_MS = 3000;
+const DAILY_SWAP_COUNT_BY_INTENSITY = [1, 1, 2, 3];
 
 function tickDailySwap() {
   const swaps = state.dailyTemplateData && state.dailyTemplateData.swaps;
   if (!swaps) return false;
-  const keys = Object.keys(swaps);
-  if (keys.length === 0) return false;
+  const allKeys = Object.keys(swaps);
+  if (allKeys.length === 0) return false;
 
-  const key = keys[Math.floor(Math.random() * keys.length)];
-  const options = swaps[key];
-  if (!options || options.length < 2) return false;
+  const wantCount = DAILY_SWAP_COUNT_BY_INTENSITY[state.dailyIntensity] || 1;
+  const keys = allKeys.sort(() => Math.random() - 0.5).slice(0, wantCount);
 
-  const current = state.dailySwapIndex[key] || 0;
-  let next = current;
-  while (next === current) next = Math.floor(Math.random() * options.length);
-  state.dailySwapIndex[key] = next;
-  return true;
+  let changedAny = false;
+  keys.forEach((key) => {
+    const options = swaps[key];
+    if (!options || options.length < 2) return;
+    const current = state.dailySwapIndex[key] || 0;
+    let next = current;
+    while (next === current) next = Math.floor(Math.random() * options.length);
+    state.dailySwapIndex[key] = next;
+    changedAny = true;
+  });
+  return changedAny;
 }
 
 function scheduleDailySwap() {

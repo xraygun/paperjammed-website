@@ -165,3 +165,71 @@
   text-align: center;
   pointer-events: none;
 }
+
+/* Temple of Unhinged Testpages — sidebar button only (already inside the
+   .no-print sidebar, so none of this needs its own print handling).
+   Two pieces: the label's per-letter color cycling, and the black
+   starfield + floating emoji layer, both gated on the button's own radio
+   being checked so they only run while this template is selected. */
+.tout-letter {
+  display: inline-block;
+}
+.template-btn:has(input:checked) .tout-letter {
+  animation: dm-letter-cycle 2.6s ease-in-out infinite;
+}
+@keyframes dm-letter-cycle {
+  0%   { color: #e34fee; }
+  20%  { color: #38bdf8; }
+  40%  { color: #fb7185; }
+  60%  { color: #a78bfa; }
+  80%  { color: #fb923c; }
+  100% { color: #e34fee; }
+}
+
+.dm-starfield-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+}
+.template-btn:has(input:checked) .dm-starfield-layer {
+  opacity: 1;
+}
+.dm-stars {
+  position: absolute;
+  inset: -20%;
+  background-color: #000;
+  background-repeat: repeat;
+  background-size: 140px 140px;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, #fff, transparent 60%),
+    radial-gradient(1px 1px at 30% 70%, #fff, transparent 60%),
+    radial-gradient(1.5px 1.5px at 55% 15%, #fff, transparent 60%),
+    radial-gradient(1px 1px at 70% 55%, #fff, transparent 60%),
+    radial-gradient(1.5px 1.5px at 85% 80%, #fff, transparent 60%),
+    radial-gradient(1px 1px at 95% 35%, #fff, transparent 60%),
+    radial-gradient(1px 1px at 20% 90%, #fff, transparent 60%),
+    radial-gradient(1px 1px at 45% 40%, #fff, transparent 60%);
+  animation: dm-twinkle 3.2s ease-in-out infinite alternate;
+}
+@keyframes dm-twinkle {
+  0%   { opacity: 0.55; }
+  100% { opacity: 1; }
+}
+.dm-float {
+  position: absolute;
+  transform: translate(0, 0);
+  animation-name: dm-float-drift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.6));
+}
+@keyframes dm-float-drift {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(var(--tx1), var(--ty1)); }
+  50%  { transform: translate(var(--tx2), var(--ty2)); }
+  75%  { transform: translate(var(--tx3), var(--ty3)); }
+  100% { transform: translate(0, 0); }
+}
