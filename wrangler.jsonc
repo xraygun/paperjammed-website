@@ -13,7 +13,7 @@
     }
   },
 
-  // Workers AI — generates "The One That Keeps Changing" template's daily
+  // Workers AI — generates "Temple of Unhinged Testpages" template's daily
   // content. Free-tier binding, no separate API key needed.
   "ai": {
     "binding": "AI"
@@ -26,13 +26,10 @@
     "crons": ["0 9 * * *"]
   },
 
-  // TODO before merging: run `npx wrangler kv namespace create DAILY_TEMPLATE`
-  // and replace the id below with the one it prints. Deploy will fail loudly
-  // (not silently) until this is a real namespace id — that's expected.
   "kv_namespaces": [
     {
       "binding": "DAILY_TEMPLATE",
-      "id": "REPLACE_WITH_REAL_KV_NAMESPACE_ID"
+      "id": "e7239e2b3d2f4b24af54c91d46a6ecf8"
     }
   ]
 }
