@@ -89,6 +89,49 @@ function applySwaps(text, swaps, indexMap) {
   });
 }
 
+// Well Done and Cooked don't just look different — the prose itself
+// starts visibly breaking down. Runs off plain Math.random() (not the
+// hash) on purpose: it's called on every render, so it reshuffles both
+// on the 3s word-swap tick AND immediately when the hash/intensity
+// controls are touched, rather than sitting fixed between renders.
+const GLITCH_CHARS = '#%&*0123456789';
+
+function scrambleWord(word) {
+  const chars = word.split('');
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join('');
+}
+
+function glitchInsert(word) {
+  const pos = Math.floor(Math.random() * (word.length + 1));
+  const ch = GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)];
+  return word.slice(0, pos) + ch + word.slice(pos);
+}
+
+function mangleText(text, intensityLevel) {
+  if (!text || intensityLevel < 2) return text;
+  const mangleChance = intensityLevel === 2 ? 0.14 : 0.3;
+  const glitchChance = intensityLevel === 3 ? 0.18 : 0;
+
+  return text
+    .split(' ')
+    .map((word) => {
+      if (word.length < 3) return word;
+      let w = word;
+      if (Math.random() < mangleChance) {
+        w = Math.random() < 0.5 ? w.split('').reverse().join('') : scrambleWord(w);
+      }
+      if (glitchChance && Math.random() < glitchChance) {
+        w = glitchInsert(w);
+      }
+      return w;
+    })
+    .join(' ');
+}
+
 // Intensity 0-3 -> how far from baseline the randomized styling drifts.
 // Deliberately clamped even at "Cooked" — this still has to survive the
 // site's print shrink-to-fit, not go fully unbounded.
@@ -201,7 +244,7 @@ function starfieldHtml(hash, intensityLevel) {
 export default {
   key: 'dailyMystery',
   label: 'Temple of Unhinged Testpages',
-  description: "It's never too late to change, but this page will before you can print it.",
+  description: '',
   icon: 'fa-dice',
   badge: { text: 'DAILY', className: 'bg-fuchsia-500 text-white' },
   borderClasses: 'border-fuchsia-500/50 hover:border-fuchsia-400 bg-fuchsia-950/20 hover:bg-fuchsia-900/30',
@@ -231,6 +274,9 @@ export default {
     return starfieldHtml(state.dailyHash, state.dailyIntensity ?? 0);
   },
 
+  // No hint text, no explanation of what any of this does — on purpose.
+  // Nobody gets told what Discombobulator Seed or the slider do; you turn
+  // them and watch.
   controlsHtml(state) {
     const hash = state.dailyHash ?? '';
     const intensity = state.dailyIntensity ?? 0;
@@ -240,27 +286,25 @@ export default {
       <div class="mt-2 bg-fuchsia-950/30 border border-fuchsia-500/30 rounded-lg p-3 space-y-2.5">
         <div class="flex items-end gap-2">
           <div class="flex-1">
-            <label for="dailyHashInput" class="text-[11px] font-bold text-fuchsia-300 uppercase tracking-wider flex items-center gap-1.5">
-              <i class="fa-solid fa-hashtag text-fuchsia-400"></i>
-              <span>Randomness Hash:</span>
+            <label for="dailyHashInput" class="text-[11px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-hashtag text-white"></i>
+              <span>Discombobulator Seed:</span>
             </label>
             <input type="text" id="dailyHashInput" value="${esc(String(hash))}" oninput="handleDailyHashChange(this.value)"
               class="w-full mt-1 bg-slate-900 border border-fuchsia-500/40 rounded px-2 py-1.5 text-xs font-mono text-fuchsia-100 focus:outline-none focus:border-fuchsia-400">
           </div>
-          <button type="button" onclick="handleDailyHashRefresh()" title="Roll a new hash"
-            class="shrink-0 bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-xs font-bold px-3 py-2 rounded-lg transition">
+          <button type="button" onclick="handleDailyHashRefresh()" title="Re-discombobulate"
+            class="shrink-0 bg-transparent hover:bg-fuchsia-500/10 text-white text-xs font-bold px-3 py-2 rounded-lg transition border border-fuchsia-500/40">
             <i class="fa-solid fa-dice"></i>
           </button>
         </div>
-        <p class="text-[9px] text-fuchsia-300/60 italic">Seeds the page's visual weirdness. A random word also swaps to a synonym every few seconds, on its own. Not fully explained or understood.</p>
 
         <div class="pt-1">
-          <label for="dailyIntensityInput" class="text-[11px] font-bold text-fuchsia-300 uppercase tracking-wider block mb-1">How would you like your template?</label>
+          <label for="dailyIntensityInput" class="text-[11px] font-bold text-white uppercase tracking-wider block mb-1">How would you like your template?</label>
           <input type="range" id="dailyIntensityInput" min="0" max="3" step="1" value="${intensity}"
             oninput="handleDailyIntensityChange(this.value)"
-            class="w-full accent-fuchsia-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
-          <p id="dailyIntensityStatus" class="text-center text-xs font-mono font-bold text-fuchsia-200 mt-1 uppercase tracking-wider">${label}</p>
-          <p id="dailyCookedNote" class="text-[9px] text-red-400 font-bold text-center mt-1" style="display:${intensity === 3 ? 'block' : 'none'};">⚠ Cooked adds a combustion warning &amp; rogue code on the page.</p>
+            class="w-full accent-white h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+          <p id="dailyIntensityStatus" class="text-center text-xs font-mono font-bold text-white mt-1 uppercase tracking-wider">${label}</p>
         </div>
       </div>
     `;
@@ -272,7 +316,7 @@ export default {
     const style = computeRandomStyle(state.dailyHash, intensityLevel);
     const cooked = intensityLevel === 3 ? computeCookedExtras(state.dailyHash) : null;
 
-    const sw = (text) => applySwaps(text, c.swaps, state.dailySwapIndex);
+    const sw = (text) => mangleText(applySwaps(text, c.swaps, state.dailySwapIndex), intensityLevel);
     const proseStyle = `letter-spacing:${style.letterSpacing}em; text-align:${style.textAlign};`;
     const listItemStyle = `letter-spacing:${style.letterSpacing}em;`;
 
@@ -304,7 +348,7 @@ export default {
           ${warningBanner}
           <div class="border-b-4 border-black pb-1 mb-2 text-center">
             <span class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-600 block">AUTOMATED DAILY DIAGNOSTIC — CONTENT MAY VARY WITHOUT WARNING</span>
-            <h1 class="text-lg font-black uppercase tracking-widest text-slate-950 my-1 leading-tight">${esc(sw(c.headline))}</h1>
+            <h1 class="text-lg font-black uppercase tracking-widest text-slate-950 my-1 leading-tight">${esc(applySwaps(c.headline, c.swaps, state.dailySwapIndex))}</h1>
             <p class="text-[10px] italic text-slate-700" style="${proseStyle}">${esc(sw(c.subheadline))}</p>
           </div>
 

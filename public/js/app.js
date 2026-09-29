@@ -243,6 +243,10 @@ function renderSidebar() {
       ? `<div id="controls-${key}" style="display: none;">${t.controlsHtml(state)}</div>`
       : '';
 
+    const descriptionHtml = t.description
+      ? `<p class="text-xs text-slate-300 mt-0.5">${t.description}</p>`
+      : '';
+
     return `
       <div>
         <label onclick="setTemplate('${key}')" class="template-btn relative overflow-hidden flex items-start gap-3 p-3 rounded-lg border ${t.borderClasses} cursor-pointer transition">
@@ -253,7 +257,7 @@ function renderSidebar() {
               <span class="flex items-center gap-1.5 ${labelSpanClass}">${iconHtml}${labelInner}</span>
               ${badgeHtml}
             </div>
-            <p class="text-xs text-slate-300 mt-0.5">${t.description}</p>
+            ${descriptionHtml}
           </div>
         </label>
         ${controlsHtml}
@@ -477,9 +481,6 @@ function handleDailyIntensityChange(val) {
 
   const statusEl = document.getElementById('dailyIntensityStatus');
   if (statusEl) statusEl.textContent = DAILY_INTENSITY_LABELS[num] || DAILY_INTENSITY_LABELS[0];
-
-  const cookedNoteEl = document.getElementById('dailyCookedNote');
-  if (cookedNoteEl) cookedNoteEl.style.display = num === 3 ? 'block' : 'none';
 
   renderDailyMysteryIfActive();
   refreshDailyStarfield();
