@@ -14,7 +14,8 @@ const state = {
   certTechName: '',
   orderAnimal: '',
   orderRecipient: '',
-  orderAddress: ''
+  orderAddress: '',
+  dailyTemplateData: null
 };
 
 // ----------------------------------------------------------------------------
@@ -404,6 +405,26 @@ function updateCustomNote() {
 }
 
 // ----------------------------------------------------------------------------
+// Daily Mystery content (fetched once — the server only regenerates it via
+// its own Cron Trigger, this just reads whatever's currently cached)
+// ----------------------------------------------------------------------------
+async function loadDailyTemplate() {
+  try {
+    const res = await fetch('/api/daily-template');
+    if (!res.ok) return; // 404 before the first generation has run — DEFAULT_CONTENT covers it
+    const data = await res.json().catch(() => null);
+    if (!data) return;
+    state.dailyTemplateData = data;
+    if (state.currentTemplateKey === 'dailyMystery') {
+      const contentEl = document.getElementById('templateContent');
+      if (contentEl) contentEl.innerHTML = templates.dailyMystery.render(state);
+    }
+  } catch (e) {
+    // Offline/network failure — the template's own DEFAULT_CONTENT covers this.
+  }
+}
+
+// ----------------------------------------------------------------------------
 // Boot
 // ----------------------------------------------------------------------------
 function initApp() {
@@ -413,6 +434,7 @@ function initApp() {
   renderSidebar();
   setTemplate(state.currentTemplateKey);
   loadPrintCount();
+  loadDailyTemplate();
 }
 
 // Expose the handlers referenced by inline HTML attributes (onclick/oninput)

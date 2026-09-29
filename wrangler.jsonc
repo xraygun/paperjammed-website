@@ -11,5 +11,28 @@
       "enabled": true,
       "invocation_logs": true
     }
-  }
+  },
+
+  // Workers AI — generates "The One That Keeps Changing" template's daily
+  // content. Free-tier binding, no separate API key needed.
+  "ai": {
+    "binding": "AI"
+  },
+
+  // Cron Trigger — fires scheduled() in src/index.js once a day. This is
+  // the ONLY code path that calls the model; nothing a visitor does can
+  // trigger a generation. 9am UTC, adjust to taste.
+  "triggers": {
+    "crons": ["0 9 * * *"]
+  },
+
+  // TODO before merging: run `npx wrangler kv namespace create DAILY_TEMPLATE`
+  // and replace the id below with the one it prints. Deploy will fail loudly
+  // (not silently) until this is a real namespace id — that's expected.
+  "kv_namespaces": [
+    {
+      "binding": "DAILY_TEMPLATE",
+      "id": "REPLACE_WITH_REAL_KV_NAMESPACE_ID"
+    }
+  ]
 }
