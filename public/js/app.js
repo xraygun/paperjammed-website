@@ -235,8 +235,12 @@ function renderSidebar() {
     // Optional per-template flourish: a background layer behind the label
     // (currently only Daily Mystery's starfield). Sits under the label via
     // z-index; pointer-events:none so it never blocks the click-to-select.
+    // The warp-in overlay is a SIBLING of #starfield-${key}, not a child —
+    // refreshDailyStarfield() replaces that element's innerHTML wholesale
+    // on every hash/intensity change, which would delete the warp div too
+    // if it lived inside it.
     const overlayHtml = typeof t.starfieldHtml === 'function'
-      ? `<div class="dm-starfield-layer" id="starfield-${key}">${t.starfieldHtml(state)}</div>`
+      ? `<div class="dm-warp"></div><div class="dm-starfield-layer" id="starfield-${key}">${t.starfieldHtml(state)}</div>`
       : '';
 
     const controlsHtml = typeof t.controlsHtml === 'function'
@@ -457,6 +461,11 @@ function dailyIntensityBand(pct) {
   if (pct >= 25) return 1;
   return 0;
 }
+function dailyIntensityStatus(pct) {
+  if (pct >= 100) return { text: 'Unhinged', variant: 'unhinged' };
+  if (pct >= 85) return { text: 'Warning', variant: 'warning' };
+  return { text: DAILY_INTENSITY_LABELS[dailyIntensityBand(pct)], variant: '' };
+}
 
 // The sidebar button's starfield is keyed off (hash, intensity) too, so
 // both controls need to refresh it, not just the print-sheet re-render.
@@ -487,7 +496,12 @@ function handleDailyIntensityChange(val) {
   state.dailyIntensity = num;
 
   const statusEl = document.getElementById('dailyIntensityStatus');
-  if (statusEl) statusEl.textContent = DAILY_INTENSITY_LABELS[dailyIntensityBand(num)];
+  if (statusEl) {
+    const status = dailyIntensityStatus(num);
+    statusEl.textContent = status.text;
+    statusEl.classList.remove('dm-status-warning', 'dm-status-unhinged');
+    if (status.variant) statusEl.classList.add(`dm-status-${status.variant}`);
+  }
 
   renderDailyMysteryIfActive();
   refreshDailyStarfield();

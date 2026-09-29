@@ -186,13 +186,42 @@
   100% { color: #e34fee; }
 }
 
+/* Warp-in: plays once every time this button is (re)selected — a
+   radiating light-streak zoom, like the printer just hyperspace-jumped
+   you to the temple. Sits above the starfield (z-index) and fades out
+   right as the starfield itself finishes fading in (see its
+   transition-delay below), so one hands off to the other. */
+.dm-warp {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(191, 219, 254, 0.9) 0deg 1.2deg,
+    transparent 1.2deg 6deg
+  );
+}
+.template-btn:has(input:checked) .dm-warp {
+  animation: dm-warp-seq 1s ease-out 1;
+}
+@keyframes dm-warp-seq {
+  0%   { opacity: 0; transform: scale(0.2); }
+  15%  { opacity: 1; transform: scale(0.6); }
+  70%  { opacity: 1; transform: scale(1.8); }
+  100% { opacity: 0; transform: scale(2.4); }
+}
+
 .dm-starfield-layer {
   position: absolute;
   inset: 0;
   overflow: hidden;
   opacity: 0;
-  transition: opacity 0.6s ease;
+  transition: opacity 0.6s ease 1s;
   pointer-events: none;
+  z-index: 1;
 }
 .template-btn:has(input:checked) .dm-starfield-layer {
   opacity: 1;
@@ -226,10 +255,42 @@
   animation-iteration-count: infinite;
   filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.6));
 }
+/* Asteroids-style wraparound: a straight-line drift from one off-screen
+   edge to the opposite one (--sx/--sy to --ex/--ey, set far enough out
+   in dailyMystery.js to fully clear the button), then an instant snap
+   back to the start at the 49.9% -> 50% boundary — no easing across that
+   jump, so it reads as "reappeared on the other side" rather than a
+   visible teleport-slide. */
 @keyframes dm-float-drift {
+  0%    { transform: translate(var(--sx), var(--sy)); }
+  49.9% { transform: translate(var(--ex), var(--ey)); }
+  50%   { transform: translate(var(--sx), var(--sy)); }
+  100%  { transform: translate(var(--ex), var(--ey)); }
+}
+
+/* Intensity readout's top-of-range states (see intensityStatus() in
+   dailyMystery.js) — Warning shakes in place, Unhinged fades/dissolves/
+   reappears in a loop. Both override the plain white readout color. */
+.dm-status-warning {
+  color: #ef4444 !important;
+  animation: dm-shake 0.15s linear infinite;
+}
+@keyframes dm-shake {
   0%   { transform: translate(0, 0); }
-  25%  { transform: translate(var(--tx1), var(--ty1)); }
-  50%  { transform: translate(var(--tx2), var(--ty2)); }
-  75%  { transform: translate(var(--tx3), var(--ty3)); }
+  20%  { transform: translate(-1px, 1px); }
+  40%  { transform: translate(1px, -1px); }
+  60%  { transform: translate(-1px, -1px); }
+  80%  { transform: translate(1px, 1px); }
   100% { transform: translate(0, 0); }
+}
+.dm-status-unhinged {
+  animation: dm-dissolve 2.2s ease-in-out infinite;
+}
+@keyframes dm-dissolve {
+  0%   { opacity: 0; filter: blur(2px); }
+  15%  { opacity: 1; filter: blur(0); }
+  55%  { opacity: 1; filter: blur(0); }
+  70%  { opacity: 0; filter: blur(3px); }
+  85%  { opacity: 0; filter: blur(3px); }
+  100% { opacity: 1; filter: blur(0); }
 }

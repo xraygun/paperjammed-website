@@ -62,6 +62,17 @@ function isCooked(pct) {
   return pct >= 75;
 }
 
+// The status readout gets sharper right at the top of the range: Cooked
+// still shows through 84%, then "Warning" (shaky red) from 85-99%, then
+// "Unhinged" (fades in, dissolves, reappears) right at 100. Both variant
+// names double as CSS class suffixes (dm-status-warning/-unhinged) — see
+// style.css. Thresholds duplicated in app.js's live status-text update.
+function intensityStatus(pct) {
+  if (pct >= 100) return { text: 'Unhinged', variant: 'unhinged' };
+  if (pct >= 85) return { text: 'Warning', variant: 'warning' };
+  return { text: INTENSITY_LABELS[intensityBand(pct)], variant: '' };
+}
+
 function esc(s) {
   return String(s)
     .replace(/&/g, '&amp;')
@@ -253,16 +264,26 @@ function starfieldHtml(hash, pct) {
     const size = 12 + Math.round(rand() * 10);
     const duration = 9 + Math.round(rand() * 12);
     // Negative delay starts the animation already mid-cycle, so floaters
-    // are in motion from the first frame instead of freezing at 0% until
-    // their delay elapses.
+    // are already in transit on the first frame instead of starting
+    // parked at their entry point.
     const negDelay = -Math.round(rand() * duration);
-    const tx1 = Math.round(rand() * 500 - 250);
-    const ty1 = Math.round(rand() * 400 - 200);
-    const tx2 = Math.round(rand() * 500 - 250);
-    const ty2 = Math.round(rand() * 400 - 200);
-    const tx3 = Math.round(rand() * 500 - 250);
-    const ty3 = Math.round(rand() * 400 - 200);
-    floaters += `<span class="dm-float" style="left:${left}%; top:${top}%; font-size:${size}px; animation-duration:${duration}s; animation-delay:${negDelay}s; --tx1:${tx1}%; --ty1:${ty1}%; --tx2:${tx2}%; --ty2:${ty2}%; --tx3:${tx3}%; --ty3:${ty3}%;">${emoji}</span>`;
+
+    // Asteroids-style wraparound: travel a straight line from one
+    // off-screen edge to the opposite one (a big enough distance that it
+    // fully clears the button, not just fades at the border), then snap
+    // instantly back to the start and repeat — see the keyframes' 49.9%
+    // -> 50% jump in style.css. One random angle per floater, not just
+    // horizontal, so they don't all drift the same direction.
+    const angle = rand() * Math.PI * 2;
+    const dist = 550 + rand() * 250;
+    const dx = Math.round(Math.cos(angle) * dist);
+    const dy = Math.round(Math.sin(angle) * dist);
+    const sx = -Math.round(dx / 2);
+    const sy = -Math.round(dy / 2);
+    const ex = Math.round(dx / 2);
+    const ey = Math.round(dy / 2);
+
+    floaters += `<span class="dm-float" style="left:${left}%; top:${top}%; font-size:${size}px; animation-duration:${duration}s; animation-delay:${negDelay}s; --sx:${sx}%; --sy:${sy}%; --ex:${ex}%; --ey:${ey}%;">${emoji}</span>`;
   }
 
   return `<div class="dm-stars"></div>${floaters}`;
@@ -283,8 +304,14 @@ export default {
   // Sidebar-only: wraps each letter of the label so it can be color-cycled
   // by CSS while this button is selected (see .tout-letter in style.css).
   // A fixed per-letter stagger, not randomness — this runs once at boot.
+  //
+  // The whole thing is wrapped in one outer <span> so the label row's
+  // flex+gap only ever sees ONE child here (plus the icon) — without it,
+  // every individual letter becomes its own flex item and gets a 6px gap
+  // shoved after it. That outer span is a plain inline element, so the
+  // label still wraps normally at word boundaries if it doesn't fit.
   labelHtml() {
-    return this.label
+    const letters = this.label
       .split('')
       .map((ch, i) => {
         if (ch === ' ') return ' ';
@@ -292,6 +319,7 @@ export default {
         return `<span class="tout-letter" style="animation-delay:${delay}s">${esc(ch)}</span>`;
       })
       .join('');
+    return `<span>${letters}</span>`;
   },
 
   // Sidebar-only: the black "window" + floating emoji behind the button,
@@ -307,7 +335,8 @@ export default {
   controlsHtml(state) {
     const hash = state.dailyHash ?? '';
     const pct = state.dailyIntensity ?? 0;
-    const label = INTENSITY_LABELS[intensityBand(pct)];
+    const status = intensityStatus(pct);
+    const statusClass = status.variant ? ` dm-status-${status.variant}` : '';
 
     return `
       <div class="mt-2 bg-fuchsia-950/30 border border-fuchsia-500/30 rounded-lg p-3 space-y-2.5">
@@ -331,7 +360,7 @@ export default {
           <input type="range" id="dailyIntensityInput" min="0" max="100" value="${pct}"
             oninput="handleDailyIntensityChange(this.value)"
             class="w-full accent-white h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
-          <p id="dailyIntensityStatus" class="text-center text-xs font-mono font-bold text-white mt-1 uppercase tracking-wider">${label}</p>
+          <p id="dailyIntensityStatus" class="text-center text-xs font-mono font-bold text-white mt-1 uppercase tracking-wider${statusClass}">${status.text}</p>
         </div>
       </div>
     `;
