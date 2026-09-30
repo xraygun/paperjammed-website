@@ -1,3 +1,6 @@
+import { SITE_URL } from '../siteConfig.js';
+import { calibrationBars } from '../calibrationBars.js';
+
 // "The One That Keeps Changing" — content is generated once a day by a
 // Cloudflare Cron Trigger (see src/index.js `scheduled()`), never by the
 // visitor. This file only ever reads the cached result from
@@ -386,6 +389,28 @@ function wingdingFrameHtml(hash) {
   return row('top') + row('bottom') + col('left') + col('right');
 }
 
+// Multi-page mode hides the shared #globalFooterContainer, so page 2 prints
+// its own copy of it (same status line, custom note, site label and colour
+// bar), pinned to the bottom of the page. The drum streak runs through it.
+const DEFAULT_FOOTNOTE = 'IT Print Verification Completed. Do not discard unless Chuck Norris says so.';
+
+function siteFooterHtml(customNote) {
+  const note = customNote && customNote.trim() ? customNote : DEFAULT_FOOTNOTE;
+  return `
+    <div style="position:absolute; left:10mm; right:10mm; bottom:10mm; z-index:9;" class="pt-3 border-t border-slate-300">
+      <div class="flex justify-between items-end">
+        <div>
+          <p class="font-bold text-[11px] text-slate-800 uppercase tracking-wider">SYSTEM DIAGNOSTIC COMPLETION STATUS: <span class="text-slate-900">SUCCESS</span></p>
+          <p class="text-[10px] text-slate-600 italic">${esc(note)}</p>
+        </div>
+        <div class="text-right">
+          <span class="text-[9px] text-slate-400 font-sans font-bold block">${SITE_URL.toUpperCase()} LOGICAL UNIT</span>
+        </div>
+      </div>
+      <div class="mt-2 grid grid-cols-6 h-3 rounded overflow-hidden border border-slate-300">${calibrationBars.color}</div>
+    </div>`;
+}
+
 function drumStreakHtml(hash) {
   const n = computeCrayonNote(hash);
   return `<div style="position:absolute; top:0; bottom:0; left:${n.streakLeft}%; width:2px; z-index:10; pointer-events:none; background:#000;"></div>`;
@@ -641,6 +666,6 @@ export default {
     // app.js's renderDailyMysteryIfActive() toggling #printSheet's
     // multi-page-mode class to match — it can't be done here, since this
     // function only returns markup, it doesn't touch the DOM directly.
-    return teaser + `<div class="print-only"><div class="print-page"></div><div class="print-page" style="position:relative; display:flex; flex-direction:column; height:100vh !important; max-height:100vh !important;">${drumStreakHtml(state.dailyHash)}${printDefectsHtml(state.dailyHash)}${ghostHeadlineHtml(esc(applySwaps(c.headline, c.swaps, state.dailySwapIndex)))}${driverGarbageHtml(state.dailyHash)}${sheetHtml}${crayonNoteHtml(state.dailyHash)}</div></div>`;
+    return teaser + `<div class="print-only"><div class="print-page"></div><div class="print-page" style="position:relative; display:flex; flex-direction:column; height:100vh !important; max-height:100vh !important; padding-bottom:calc(10mm + 72px) !important;">${drumStreakHtml(state.dailyHash)}${printDefectsHtml(state.dailyHash)}${ghostHeadlineHtml(esc(applySwaps(c.headline, c.swaps, state.dailySwapIndex)))}${driverGarbageHtml(state.dailyHash)}${sheetHtml}${crayonNoteHtml(state.dailyHash)}${siteFooterHtml(state.customNote)}</div></div>`;
   }
 };
