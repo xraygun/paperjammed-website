@@ -230,7 +230,7 @@ window.addEventListener('afterprint', resetShrinkToFit);
 function renderTemplateItem(key) {
     const t = templates[key];
     const badgeHtml = t.badge
-      ? `<span class="text-[10px] ${t.badge.className} font-bold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0 uppercase tracking-wider">${t.badge.text}</span>`
+      ? `<span class="text-[10px] ${t.badge.className} font-bold px-1.5 py-0.5 rounded shrink-0 max-w-[50%] text-center leading-tight uppercase tracking-wider">${t.badge.text}</span>`
       : '';
     const iconHtml = t.icon ? `<i class="fa-solid ${t.icon} text-xs"></i> ` : '';
     const labelSpanClass = t.labelTextClass ? `${t.labelTextClass} font-bold` : '';
@@ -260,9 +260,9 @@ function renderTemplateItem(key) {
         <label onclick="setTemplate('${key}', true)" class="template-btn relative overflow-hidden flex items-start gap-3 p-3 rounded-lg border ${t.borderClasses} cursor-pointer transition">
           ${overlayHtml}
           <input type="radio" name="template" value="${key}" ${key === state.currentTemplateKey ? 'checked' : ''} class="relative z-10 mt-1 ${t.radioAccent}">
-          <div class="relative z-10 w-full">
+          <div class="relative z-10 w-full min-w-0">
             <div class="font-medium text-white flex items-center justify-between gap-2">
-              <span class="flex items-center gap-1.5 ${labelSpanClass}">${iconHtml}${labelInner}</span>
+              <span class="flex items-center gap-1.5 min-w-0 ${labelSpanClass}">${iconHtml}${labelInner}</span>
               ${badgeHtml}
             </div>
             ${descriptionHtml}
