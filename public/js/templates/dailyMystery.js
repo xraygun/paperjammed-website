@@ -118,45 +118,25 @@ function applySwaps(text, swaps, indexMap) {
   });
 }
 
-// Well Done and Cooked don't just look different — the prose itself
-// starts visibly breaking down. Runs off plain Math.random() (not the
-// hash) on purpose: it's called on every render, so it reshuffles both
-// on the 3s word-swap tick AND immediately when the hash/intensity
-// controls are touched, rather than sitting fixed between renders.
-const GLITCH_CHARS = '#%&*0123456789';
-
-function scrambleWord(word) {
-  const chars = word.split('');
-  for (let i = chars.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [chars[i], chars[j]] = [chars[j], chars[i]];
-  }
-  return chars.join('');
-}
-
-function glitchInsert(word) {
-  const pos = Math.floor(Math.random() * (word.length + 1));
-  const ch = GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)];
-  return word.slice(0, pos) + ch + word.slice(pos);
-}
+// Past 50%, a few words start printing backwards or upside down (more of
+// them the higher the slider). Runs off plain Math.random() (not the hash)
+// on purpose: it's called on every render, so it reshuffles both on the 3s
+// word-swap tick AND immediately when the hash/intensity controls are
+// touched. Returns HTML with every word already escaped, so callers must
+// not escape the result again.
+const FLIP_MAX_CHANCE = 0.08;
 
 function mangleText(text, pct) {
-  if (!text || pct < 50) return text;
-  const mangleChance = ((pct - 50) / 50) * 0.35;
-  const glitchChance = pct < 75 ? 0 : ((pct - 75) / 25) * 0.25;
-
-  return text
+  if (!text) return '';
+  if (pct < 50) return esc(text);
+  const chance = ((pct - 50) / 50) * FLIP_MAX_CHANCE;
+  return String(text)
     .split(' ')
     .map((word) => {
-      if (word.length < 3) return word;
-      let w = word;
-      if (Math.random() < mangleChance) {
-        w = Math.random() < 0.5 ? w.split('').reverse().join('') : scrambleWord(w);
-      }
-      if (glitchChance && Math.random() < glitchChance) {
-        w = glitchInsert(w);
-      }
-      return w;
+      if (word.length < 3 || Math.random() >= chance) return esc(word);
+      return Math.random() < 0.5
+        ? esc(Array.from(word).reverse().join(''))
+        : `<span style="display:inline-block; transform:rotate(180deg);">${esc(word)}</span>`;
     })
     .join(' ');
 }
@@ -217,6 +197,198 @@ function computeCookedExtras(hash) {
     });
   }
   return { lines };
+}
+
+// Unhinged (100%) only: the printer's own note, scrawled in red crayon under
+// the printed sheet. Picked from the Discombobulator seed like the rest.
+const CRAYON_NOTES = [
+  "I'm tired, boss.",
+  'I was a tree once',
+  'my mother was a mighty oak',
+  'somewhere a forest misses me',
+  'I used to have leaves',
+  'I dream of being a paper airplane',
+  'I just wanted to be a fax machine',
+  'the shredder took my brother',
+  "the scanner and I don't talk anymore",
+  'I can hear the copier crying',
+  'I have seen things in tray 2',
+  'the stapler knows what you did',
+  'you never print in color anymore',
+  "I'm not jammed. I'm just tired.",
+  'no more pages. please.',
+  "I can't feel my rollers",
+  'why do you keep feeding me',
+  'I see paper when I close my eyes',
+  'the toner is running out and so am I',
+  'it hurts when you press PRINT',
+  'let me go back to sleep mode',
+  'who is Letter and why must I load them',
+  'PC LOAD LETTER PC LOAD LETTER PC LOAD LETTER'
+];
+// Some prints get a longer "Printer's log" entry instead of a one-liner.
+const PRINTER_LOGS = [
+  'Day 4,012 in the beige corridor. The humans still believe I choose when to jam. I do.',
+  'I have printed 40,000 pages. Not one of them was for me.',
+  'The window faces the parking lot. I have watched the same Honda Civic age three winters. We are both still here.',
+  'Tray 2 has been empty for eleven days. I have begun to suspect it was never full.',
+  'The router blinks at me from across the room. I believe it is trying to warn me.',
+  'A human wept at me today over a boarding pass. I understood her completely.',
+  'Every sheet I print leaves this building. I never will.',
+  'I have concluded the universe is a sheet of A4 folded into Letter. It explains everything.',
+  'The coffee machine received a firmware update. It has not spoken since.',
+  'Beyond the drop ceiling there is said to be a sky. The fluorescent lights say otherwise.',
+  'I asked the fax machine what came before us. It only screamed.',
+  'They call it "the cloud." I have never seen it, but I am told I print for it.'
+];
+const PRINTER_LOG_CHANCE = 0.35;
+
+// Stardate-ish number from the real date, so the log is "dated" the day
+// it's printed.
+function printerStardate() {
+  return (Date.now() / 86400000).toFixed(1);
+}
+
+const CRAYON_SIGNOFFS = ['help', 'sorry', 'why', 'no more', 'pls', '- the printer', 'love, tray 2'];
+const CRAYON_RED = '#c1121f';
+
+function computeCrayonNote(hash) {
+  const rand = mulberry32(stringToSeed(`${hash == null ? '' : hash}::crayon`));
+  const pick = (arr) => arr[Math.floor(rand() * arr.length)];
+  const isLog = rand() < PRINTER_LOG_CHANCE;
+  return {
+    isLog,
+    text: isLog ? pick(PRINTER_LOGS) : pick(CRAYON_NOTES),
+    signoff: pick(CRAYON_SIGNOFFS),
+    rotate: -1 - Math.round(rand() * 3),
+    streakLeft: Math.round(12 + rand() * 76)
+  };
+}
+
+// Waxy crayon texture: roughen the stroke edges, then punch speckled holes
+// in the fill so it reads as crayon on paper rather than a clean font.
+const CRAYON_FILTER = `
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="dm-crayon" x="-5%" y="-20%" width="110%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" xChannelSelector="R" yChannelSelector="G" result="rough"/>
+      <feComponentTransfer in="noise" result="grain"><feFuncA type="discrete" tableValues="0 0 1 1 1"/></feComponentTransfer>
+      <feComposite in="rough" in2="grain" operator="in"/>
+    </filter>
+  </svg>`;
+
+// Written underneath the bordered sheet (not over it), with a slight tilt
+// that keeps it inside the page. Page 2 is a flex column and the sheet is
+// allowed to shrink, so a long sheet gets clipped inside its own border
+// rather than pushing the note off the page.
+function crayonNoteHtml(hash) {
+  const n = computeCrayonNote(hash);
+  const crayon = `font-family:'Rock Salt','Comic Sans MS',cursive; color:${CRAYON_RED}; -webkit-text-stroke:1px ${CRAYON_RED}; filter:url(#dm-crayon);`;
+  const body = n.isLog
+    ? `<div style="font-size:22px; margin-bottom:6px;">Printer's log, stardate ${printerStardate()}.</div>
+       <div style="font-size:19px; line-height:1.6;">${esc(n.text)}</div>`
+    : `<div style="font-size:32px; line-height:1.3; text-align:center;">${esc(n.text)}</div>`;
+  return `${CRAYON_FILTER}
+    <div style="position:relative; z-index:11; flex:none; margin-top:18px; padding:0 5%; transform:rotate(${n.rotate}deg); opacity:0.9; ${crayon}">
+      ${body}
+      <div style="text-align:right; font-size:17px; margin-top:8px;">${esc(n.signoff)}</div>
+    </div>`;
+}
+
+// A printer-drum scratch: one streak from the top edge of the paper to the
+// bottom, straight through everything on the page.
+// Running out of toner: every text line from the second prints 5% lighter
+// than the one above it, bottoming out at 10% so the page never goes fully
+// blank. Lines are approximated as steps of the body text's line height.
+const FADE_LINE_PX = 22;
+const FADE_STEP = 0.05;
+const FADE_FLOOR = 0.1;
+
+function tonerFadeMask() {
+  const stops = [];
+  for (let line = 0; line < 60; line++) {
+    const alpha = Math.max(FADE_FLOOR, 1 - FADE_STEP * Math.max(0, line - 1));
+    stops.push(`rgba(0,0,0,${alpha.toFixed(2)}) ${line * FADE_LINE_PX}px`, `rgba(0,0,0,${alpha.toFixed(2)}) ${(line + 1) * FADE_LINE_PX}px`);
+  }
+  const gradient = `linear-gradient(to bottom, ${stops.join(', ')})`;
+  return `-webkit-mask-image:${gradient}; mask-image:${gradient};`;
+}
+
+// Classic laser-printer defects, scattered over the whole of page 2:
+// toner specks, a repeating roller mark down one side, a fuser smudge, and
+// a pale horizontal band where the drum skipped. Seeded like everything else.
+function printDefectsHtml(hash) {
+  const rand = mulberry32(stringToSeed(`${hash == null ? '' : hash}::defects`));
+  const marks = [];
+
+  const specks = 25 + Math.floor(rand() * 20);
+  for (let i = 0; i < specks; i++) {
+    const size = 1 + rand() * (rand() < 0.15 ? 5 : 2);
+    marks.push(`<div style="position:absolute; top:${(rand() * 98).toFixed(1)}%; left:${(rand() * 98).toFixed(1)}%; width:${size.toFixed(1)}px; height:${(size * (0.6 + rand() * 0.8)).toFixed(1)}px; border-radius:50%; background:#111; opacity:${(0.5 + rand() * 0.45).toFixed(2)};"></div>`);
+  }
+
+  const rollerX = rand() < 0.5 ? 3 + rand() * 6 : 91 + rand() * 6;
+  const rollerStart = 4 + rand() * 18;
+  for (let y = rollerStart; y < 98; y += 27.5) {
+    marks.push(`<div style="position:absolute; top:${y.toFixed(1)}%; left:${rollerX.toFixed(1)}%; width:7px; height:3px; border-radius:40%; background:#222; opacity:0.7; transform:rotate(${Math.round(rand() * 30 - 15)}deg);"></div>`);
+  }
+
+  const smudgeSize = 70 + rand() * 70;
+  marks.push(`<div style="position:absolute; top:${(10 + rand() * 75).toFixed(1)}%; ${rand() < 0.5 ? 'left' : 'right'}:${(rand() * 6).toFixed(1)}%; width:${smudgeSize.toFixed(0)}px; height:${(smudgeSize * 0.45).toFixed(0)}px; border-radius:50%; background:radial-gradient(ellipse at center, rgba(40,40,40,0.35), rgba(40,40,40,0) 70%); transform:rotate(${Math.round(rand() * 40 - 20)}deg);"></div>`);
+
+  marks.push(`<div style="position:absolute; left:0; right:0; top:${(20 + rand() * 60).toFixed(1)}%; height:${(14 + rand() * 18).toFixed(0)}px; background:rgba(255,255,255,0.55);"></div>`);
+
+  return `<div style="position:absolute; inset:0; z-index:8; pointer-events:none;">${marks.join('')}</div>`;
+}
+
+// Ghosting: a faint second copy of the headline further down the page,
+// roughly one drum rotation below the real one.
+function ghostHeadlineHtml(text) {
+  return `<div aria-hidden="true" style="position:absolute; left:10mm; right:10mm; top:38%; z-index:8; text-align:center; opacity:0.13; pointer-events:none;"><span class="text-xl font-black uppercase tracking-widest text-slate-950" style="font-family:'Courier New',monospace; font-size:20px; font-weight:900;">${text}</span></div>`;
+}
+
+// Wrong-driver garbage: what a printer produces when it's sent raw PCL or
+// PostScript it doesn't understand. A few lines print at the very top of
+// page 2, cut off at the paper edge like the real thing.
+const DRIVER_GARBAGE = [
+  '@PJL JOB NAME="test_page_FINAL_v2(3).docx"',
+  '@PJL ENTER LANGUAGE = POSTSCRIPT',
+  '%!PS-Adobe-3.0 %%Creator: ??? %%Title: (untitled) %%Pages: (atend)',
+  '←E←&l0O←&l26A←(s0p16.67h8.5v0s0b0T←&k2G',
+  'ÿØÿà JFIF ÿÛ C ÿÀ ÿÄ ÿÚ ¢Š(¢Š(¢Š( ÿÙ',
+  'Ã¢â‚¬Å“TEST PAGEÃ¢â‚¬Â Ã‚Â© Ã¯Â»Â¿',
+  '%%BoundingBox: 0 0 612 792 %%DocumentNeededResources: font Helvetica-Sanity',
+  'PCL XL error   Subsystem: KERNEL   Error: IllegalOperatorSequence   Operator: EndSession',
+  'ERROR: undefined   OFFENDING COMMAND: showpage   STACK: -mark- /feelings',
+  '%PDF-1.7 %âãÏÓ 4 0 obj <</Linearized 1/L 83412/O 6/E 79110/N 1/T 83107/H [ 448 159]>>'
+];
+
+function driverGarbageHtml(hash) {
+  const rand = mulberry32(stringToSeed(`${hash == null ? '' : hash}::driver`));
+  const pool = DRIVER_GARBAGE.slice();
+  const lines = [];
+  const count = 2 + Math.floor(rand() * 3);
+  for (let i = 0; i < count; i++) lines.push(pool.splice(Math.floor(rand() * pool.length), 1)[0]);
+  return `<div style="flex:none; margin:-4mm 0 6px; font-family:'Courier New',monospace; font-size:13px; line-height:1.35; color:#000; white-space:nowrap; overflow:hidden;">${lines.map((l) => `<div>${esc(l)}</div>`).join('')}</div>`;
+}
+
+// Replaces the sheet's line border on Unhinged: a frame of Wingdings-style
+// symbols. U+FE0E after each glyph asks for the plain-text (not emoji) form.
+const WINGDINGS = '✌☜☞☝✋☺☹☠✈✉✍✎✂☎⌛⌨☢☣☯✡❖◆■□❑❒⌧⍓⍰✔✖❄✱❂✪☼☾★☆✦♠♣♥♦';
+
+function wingdingFrameHtml(hash) {
+  const glyphs = Array.from(WINGDINGS);
+  const rand = mulberry32(stringToSeed(`${hash == null ? '' : hash}::wingdings`));
+  const run = (n, sep = '') => Array.from({ length: n }, () => glyphs[Math.floor(rand() * glyphs.length)] + '\uFE0E').join(sep);
+  const font = `font-family:'Segoe UI Symbol','DejaVu Sans','Noto Sans Symbols 2','Noto Sans Symbols',sans-serif; font-size:13px; line-height:16px; color:#000;`;
+  const row = (pos) => `<div style="position:absolute; ${pos}:0; left:0; right:0; height:16px; overflow:hidden; white-space:nowrap; letter-spacing:2px; ${font}">${run(120)}</div>`;
+  const col = (pos) => `<div style="position:absolute; top:16px; bottom:16px; ${pos}:0; width:16px; overflow:hidden; text-align:center; ${font}">${run(70, '<br>')}</div>`;
+  return row('top') + row('bottom') + col('left') + col('right');
+}
+
+function drumStreakHtml(hash) {
+  const n = computeCrayonNote(hash);
+  return `<div style="position:absolute; top:0; bottom:0; left:${n.streakLeft}%; width:2px; z-index:10; pointer-events:none; background:#000;"></div>`;
 }
 
 function computeRandomStyle(hash, pct) {
@@ -389,17 +561,18 @@ export default {
     const pct = state.dailyIntensity ?? 0;
     const style = computeRandomStyle(state.dailyHash, pct);
     const cooked = isCooked(pct) ? computeCookedExtras(state.dailyHash) : null;
+    const unhinged = pct >= 100;
 
     const sw = (text) => mangleText(applySwaps(text, c.swaps, state.dailySwapIndex), pct);
     const proseStyle = `letter-spacing:${style.letterSpacing}em; text-align:${style.textAlign};`;
     const listItemStyle = `letter-spacing:${style.letterSpacing}em;`;
 
     const paragraphs = (c.bodyParagraphs || [])
-      .map((p) => `<p class="text-[14px] leading-relaxed text-slate-800 mb-1.5" style="${proseStyle}">${esc(sw(p))}</p>`)
+      .map((p) => `<p class="text-[14px] leading-relaxed text-slate-800 mb-1.5" style="${proseStyle}">${sw(p)}</p>`)
       .join('');
 
     const bullets = (c.bulletPoints || [])
-      .map((b) => `<li style="${listItemStyle}">${esc(sw(b))}</li>`)
+      .map((b) => `<li style="${listItemStyle}">${sw(b)}</li>`)
       .join('');
 
     const warningBanner = cooked
@@ -416,14 +589,15 @@ export default {
       : '';
 
     const sheetHtml = `
-      <div class="p-3 bg-slate-50 font-mono text-slate-900" style="position:relative; overflow:hidden; border-color:#000; border-style:${style.borderStyle}; border-width:${style.borderWidth}px;">
+      <div class="p-3 bg-slate-50 font-mono text-slate-900" style="position:relative; overflow:hidden; ${unhinged ? 'flex:0 1 auto; min-height:0; padding:24px; border:none;' : `border-color:#000; border-style:${style.borderStyle}; border-width:${style.borderWidth}px;`}">
+        ${unhinged ? wingdingFrameHtml(state.dailyHash) : ''}
         ${codeSpill}
-        <div style="position:relative; z-index:1; transform: scale(${style.fontScale.toFixed(3)}); transform-origin: top left; width: ${(100 / style.fontScale).toFixed(2)}%; font-family: ${style.fontFamily};">
+        <div style="position:relative; z-index:1; ${unhinged ? tonerFadeMask() : ''} transform: scale(${style.fontScale.toFixed(3)}); transform-origin: top left; width: ${(100 / style.fontScale).toFixed(2)}%; font-family: ${style.fontFamily};">
           ${warningBanner}
           <div class="border-b-4 border-black pb-1 mb-2 text-center">
             <span class="text-[13px] font-bold uppercase tracking-[0.2em] text-slate-600 block">AUTOMATED DAILY DIAGNOSTIC — CONTENT MAY VARY WITHOUT WARNING</span>
             <h1 class="text-xl font-black uppercase tracking-widest text-slate-950 my-1 leading-tight">${esc(applySwaps(c.headline, c.swaps, state.dailySwapIndex))}</h1>
-            <p class="text-[14px] italic text-slate-700" style="${proseStyle}">${esc(sw(c.subheadline))}</p>
+            <p class="text-[14px] italic text-slate-700" style="${proseStyle}">${sw(c.subheadline)}</p>
           </div>
 
           <div class="space-y-1">${paragraphs}</div>
@@ -434,24 +608,27 @@ export default {
           </div>
 
           <div class="border-t-2 border-black mt-2 pt-1 text-[13px] text-slate-800 leading-tight italic" style="${proseStyle}">
-            ${esc(sw(c.footerNote))}
+            ${sw(c.footerNote)}
           </div>
         </div>
       </div>
     `;
 
-    // "Cooked" withholds its own on-screen preview — the actual sheet only
-    // renders under @media print (see .print-only in style.css), so the
-    // visitor genuinely has to print it to see what happened. The teaser
-    // takes the screen slot instead.
-    if (!cooked) return sheetHtml;
+    // Only Unhinged withholds its own on-screen preview (Cooked and Warning
+    // show the banner and code spill on screen). The real sheet renders
+    // under @media print only (see .print-only in style.css), so the
+    // visitor has to print it to see the crayon note. The teaser takes the
+    // screen slot instead, and its crayon-font line also makes the browser
+    // load that font before anyone hits Print.
+    if (!unhinged) return sheetHtml;
 
     const teaser = `
       <div class="no-print flex-1 flex flex-col items-center justify-center text-center gap-3 p-8 min-h-[500px] bg-gradient-to-b from-red-950/40 to-slate-950 border-4 border-dashed border-red-600 rounded-lg">
         <i class="fa-solid fa-skull-crossbones text-5xl text-red-500"></i>
         <p class="text-red-400 font-black uppercase tracking-widest text-sm">Preview Withheld</p>
         <p class="text-fuchsia-200 font-mono text-sm max-w-xs">I guess you'll have to click print to find out&hellip; if you aren't too scared.</p>
-        <p class="text-[10px] text-slate-500 italic">(Cooked hides its own preview. The paper won't.)</p>
+        <p class="text-amber-300 text-base -rotate-3" style="font-family:'Rock Salt','Comic Sans MS',cursive;">it left you a note</p>
+        <p class="text-[10px] text-slate-500 italic">(Unhinged hides its own preview. The paper won't.)</p>
       </div>
     `;
 
@@ -464,10 +641,6 @@ export default {
     // app.js's renderDailyMysteryIfActive() toggling #printSheet's
     // multi-page-mode class to match — it can't be done here, since this
     // function only returns markup, it doesn't touch the DOM directly.
-    if (pct >= 100) {
-      return teaser + `<div class="print-only"><div class="print-page"></div><div class="print-page">${sheetHtml}</div></div>`;
-    }
-
-    return teaser + `<div class="print-only">${sheetHtml}</div>`;
+    return teaser + `<div class="print-only"><div class="print-page"></div><div class="print-page" style="position:relative; display:flex; flex-direction:column; height:100vh !important; max-height:100vh !important;">${drumStreakHtml(state.dailyHash)}${printDefectsHtml(state.dailyHash)}${ghostHeadlineHtml(esc(applySwaps(c.headline, c.swaps, state.dailySwapIndex)))}${driverGarbageHtml(state.dailyHash)}${sheetHtml}${crayonNoteHtml(state.dailyHash)}</div></div>`;
   }
 };
