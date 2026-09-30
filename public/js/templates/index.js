@@ -6,6 +6,8 @@
 //   2. Fill in its label, description, icon, badge, colors, and render() function.
 //   3. Import it below and add it to the `templateOrder` array wherever you want
 //      it to appear in the sidebar list.
+//   4. Add its key to one of the `categories` at the bottom of this file
+//      (anything left out still shows, under "Other").
 // That's it — the sidebar, print preview, and calibration bar all update
 // automatically. You never need to touch app.js or index.html.
 // ============================================================================
@@ -56,3 +58,12 @@ export const templates = {
   spaceball,
   dailyMystery
 };
+
+// Sidebar groups and filter chips, in display order. Within a group,
+// templates keep their templateOrder order.
+export const categories = [
+  { id: 'legit', label: 'Looks Legit', keys: ['kiss', 'alignment', 'technobabble', 'trayfeed', 'certificate'] },
+  { id: 'absurd', label: 'Absurd', keys: ['jamRemover', 'ghost', 'recipe', 'invoice'] },
+  { id: 'popculture', label: 'Pop Culture', keys: ['pcloadletter', 'spaceball', 'allyourbase'] },
+  { id: 'daily', label: 'Daily', keys: ['dailyMystery'] }
+];

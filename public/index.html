@@ -100,7 +100,11 @@
     <!-- On mobile this whole pane scrolls independently (max-lg:overflow-y-auto)
          so the template list, customization box and info blurb are always
          reachable without leaving the preview pane above. -->
-    <aside class="no-print lg:col-span-4 flex flex-col gap-6 order-2 lg:order-none max-lg:flex-[2] max-lg:min-h-0 max-lg:overflow-y-auto max-lg:border-t max-lg:border-slate-700 max-lg:pt-4 max-lg:mt-2">
+    <!-- Desktop: sticky beside the (much taller) preview and scrolls on its
+         own, so the whole template list stays reachable without the page
+         scrolling past the preview. lg:self-start is required — a grid
+         item stretches to the row height and sticky has nothing to do. -->
+    <aside id="sidebar" class="no-print lg:col-span-4 flex flex-col gap-6 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto order-2 lg:order-none max-lg:flex-[2] max-lg:min-h-0 max-lg:overflow-y-auto max-lg:border-t max-lg:border-slate-700 max-lg:pt-4 max-lg:mt-2">
 
       <!-- Template Selector -->
       <div class="bg-slate-800 rounded-xl p-5 border border-slate-700 shadow-sm">
@@ -110,7 +114,9 @@
         </h2>
 
         <!-- Populated dynamically from js/templates/index.js -->
-        <div id="templateList" class="space-y-3"></div>
+        <!-- Category filter chips, populated with the list -->
+        <div id="categoryFilter" class="flex gap-2 overflow-x-auto pb-1 mb-4"></div>
+        <div id="templateList" class="space-y-5"></div>
       </div>
 
       <!-- Customization Box -->
@@ -136,7 +142,7 @@
     </aside>
 
     <!-- MAIN PREVIEW CANVAS (Print Area) -->
-    <main class="lg:col-span-8 flex flex-col items-center order-1 lg:order-none max-lg:flex-[3] max-lg:min-h-0">
+    <main id="previewPane" class="lg:col-span-8 flex flex-col items-center order-1 lg:order-none max-lg:flex-[3] max-lg:min-h-0">
 
       <div class="no-print w-full flex justify-between items-center mb-3 max-lg:shrink-0 max-sm:hidden">
         <span class="text-sm text-slate-400 font-medium flex items-center gap-2">
@@ -148,7 +154,7 @@
            no-op at desktop (printSheet becomes a direct flex child of
            <main> again, exactly like before) — the independent-scroll
            behavior only exists below the lg breakpoint. -->
-      <div class="w-full max-lg:flex-1 max-lg:min-h-0 max-lg:overflow-y-auto max-lg:pb-4 lg:contents">
+      <div id="previewScroll" class="w-full max-lg:flex-1 max-lg:min-h-0 max-lg:overflow-y-auto max-lg:pb-4 lg:contents">
         <!-- PRINT SHEET CONTAINER -->
         <div id="printSheet" class="print-area relative bg-white text-slate-900 p-6 md:p-8 shadow-2xl rounded-sm w-full max-w-[800px] min-h-[980px] flex flex-col justify-between font-mono text-xs border border-slate-200">
 

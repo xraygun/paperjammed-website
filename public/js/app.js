@@ -1,4 +1,4 @@
-import { templates, templateOrder } from './templates/index.js';
+import { templates, templateOrder, categories } from './templates/index.js';
 import { calibrationBars } from './calibrationBars.js';
 import { SITE_URL } from './siteConfig.js';
 
@@ -18,7 +18,8 @@ const state = {
   dailyTemplateData: null,
   dailyHash: String(Math.floor(Math.random() * 1e9)),
   dailyIntensity: 0,
-  dailySwapIndex: {}
+  dailySwapIndex: {},
+  categoryFilter: 'all'
 };
 
 // ----------------------------------------------------------------------------
@@ -225,11 +226,7 @@ window.addEventListener('afterprint', resetShrinkToFit);
 // ----------------------------------------------------------------------------
 // Sidebar rendering (fully data-driven off the template registry)
 // ----------------------------------------------------------------------------
-function renderSidebar() {
-  const container = document.getElementById('templateList');
-  if (!container) return;
-
-  container.innerHTML = templateOrder.map((key) => {
+function renderTemplateItem(key) {
     const t = templates[key];
     const badgeHtml = t.badge
       ? `<span class="text-[10px] ${t.badge.className} font-bold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0 uppercase tracking-wider">${t.badge.text}</span>`
@@ -258,8 +255,8 @@ function renderSidebar() {
       : '';
 
     return `
-      <div>
-        <label onclick="setTemplate('${key}')" class="template-btn relative overflow-hidden flex items-start gap-3 p-3 rounded-lg border ${t.borderClasses} cursor-pointer transition">
+      <div id="tpl-${key}">
+        <label onclick="setTemplate('${key}', true)" class="template-btn relative overflow-hidden flex items-start gap-3 p-3 rounded-lg border ${t.borderClasses} cursor-pointer transition">
           ${overlayHtml}
           <input type="radio" name="template" value="${key}" ${key === state.currentTemplateKey ? 'checked' : ''} class="relative z-10 mt-1 ${t.radioAccent}">
           <div class="relative z-10 w-full">
@@ -273,13 +270,64 @@ function renderSidebar() {
         ${controlsHtml}
       </div>
     `;
-  }).join('');
+}
+
+// The list is grouped under category headers (see `categories` in
+// templates/index.js), with a row of filter chips above it. A template no
+// category lists still shows, under "Other", so it can't silently vanish.
+function renderSidebar() {
+  const container = document.getElementById('templateList');
+  if (!container) return;
+
+  const placed = new Set(categories.flatMap((c) => c.keys));
+  const groups = categories
+    .map((c) => ({ id: c.id, label: c.label, keys: templateOrder.filter((k) => c.keys.includes(k)) }))
+    .filter((g) => g.keys.length);
+  const other = templateOrder.filter((k) => !placed.has(k));
+  if (other.length) groups.push({ id: 'other', label: 'Other', keys: other });
+
+  container.innerHTML = groups.map((g) => `
+    <div class="template-group space-y-3" data-category="${g.id}">
+      <h3 class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">${g.label}</h3>
+      ${g.keys.map(renderTemplateItem).join('')}
+    </div>
+  `).join('');
+
+  const bar = document.getElementById('categoryFilter');
+  if (bar) {
+    bar.innerHTML = [{ id: 'all', label: 'All' }, ...groups].map((c) => `
+      <button type="button" data-filter="${c.id}" onclick="setCategoryFilter('${c.id}')"
+        class="shrink-0 text-xs font-semibold px-3 py-1 rounded-full border border-slate-600 bg-slate-700/60 text-slate-300 hover:text-white transition aria-pressed:bg-rose-500 aria-pressed:border-rose-400 aria-pressed:text-white">${c.label}</button>
+    `).join('');
+  }
+  applyCategoryFilter();
+}
+
+function setCategoryFilter(id) {
+  state.categoryFilter = id;
+  applyCategoryFilter();
+}
+
+function applyCategoryFilter() {
+  const active = state.categoryFilter;
+  document.querySelectorAll('#categoryFilter button').forEach((b) => {
+    b.setAttribute('aria-pressed', String(b.dataset.filter === active));
+  });
+  document.querySelectorAll('#templateList .template-group').forEach((g) => {
+    g.style.display = active === 'all' || g.dataset.category === active ? '' : 'none';
+  });
 }
 
 // ----------------------------------------------------------------------------
 // Template switching
 // ----------------------------------------------------------------------------
-function setTemplate(key) {
+// A template can be multi-page all the time (t.multiPage) or only in some
+// states (t.isMultiPage(state) — Daily Mystery at Unhinged).
+function templateIsMultiPage(t) {
+  return typeof t.isMultiPage === 'function' ? t.isMultiPage(state) : !!t.multiPage;
+}
+
+function setTemplate(key, fromUser = false) {
   if (!templates[key]) return;
   state.currentTemplateKey = key;
 
@@ -287,6 +335,7 @@ function setTemplate(key) {
   const contentEl = document.getElementById('templateContent');
   const footerContainer = document.getElementById('globalFooterContainer');
   const t = templates[key];
+  const multiPage = templateIsMultiPage(t);
 
   // Toggle every template's own controls box (only the active one shows).
   templateOrder.forEach((k) => {
@@ -295,11 +344,11 @@ function setTemplate(key) {
   });
 
   if (printSheet) {
-    printSheet.classList.toggle('multi-page-mode', !!t.multiPage);
+    printSheet.classList.toggle('multi-page-mode', multiPage);
   }
 
   if (footerContainer) {
-    footerContainer.style.display = t.multiPage ? 'none' : 'block';
+    footerContainer.style.display = multiPage ? 'none' : 'block';
   }
 
   if (contentEl) {
@@ -310,6 +359,39 @@ function setTemplate(key) {
   if (barEl) barEl.innerHTML = calibrationBars[t.configType || 'color'];
 
   updateCustomNote();
+
+  if (fromUser) focusSelection(key);
+}
+
+// After a click: center the chosen template (and its now-open controls) in
+// the sidebar, and bring the preview back to its top so the new sheet is
+// seen from the start rather than wherever the last one was scrolled to.
+// Scrolls the sidebar container directly instead of scrollIntoView(), which
+// would also drag the window around and fight the preview reset below.
+function focusSelection(key) {
+  requestAnimationFrame(() => {
+    const sidebar = document.getElementById('sidebar');
+    const item = document.getElementById(`tpl-${key}`);
+    if (sidebar && item) {
+      const s = sidebar.getBoundingClientRect();
+      const i = item.getBoundingClientRect();
+      sidebar.scrollBy({ top: i.top - s.top - (s.height - i.height) / 2, behavior: 'smooth' });
+    }
+
+    // Phones: the sheet scrolls inside its own pane.
+    const previewScroll = document.getElementById('previewScroll');
+    if (previewScroll) previewScroll.scrollTop = 0;
+
+    // Desktop: the page itself scrolls; only move it if the preview's top
+    // is hidden under the sticky header.
+    const pane = document.getElementById('previewPane');
+    const header = document.querySelector('header');
+    if (pane && header) {
+      const gap = header.offsetHeight + 16;
+      const top = pane.getBoundingClientRect().top;
+      if (top < gap) window.scrollTo({ top: window.scrollY + top - gap, behavior: 'smooth' });
+    }
+  });
 }
 
 // ----------------------------------------------------------------------------
@@ -454,21 +536,20 @@ async function loadDailyTemplate() {
 // At Unhinged (100%) specifically, dailyMystery.js's render() switches to
 // a genuine two-page print structure (blank page 1, real content page 2 —
 // so a quick glance at print preview shows nothing) instead of the usual
-// single hidden page. #printSheet's multi-page-mode class normally only
-// gets set once, in setTemplate(), off the template's static multiPage
-// flag — but this template goes multi-page dynamically based on the
-// intensity slider, which can change without setTemplate() ever running
-// again, so it has to be re-checked here on every daily-mystery render.
+// single hidden page. setTemplate() sets #printSheet's multi-page-mode
+// class when the template is picked, but the intensity slider can cross
+// 100 without setTemplate() running again, so it's re-checked here on
+// every daily-mystery render too (same templateIsMultiPage() test).
 function renderDailyMysteryIfActive() {
   if (state.currentTemplateKey === 'dailyMystery') {
     const contentEl = document.getElementById('templateContent');
     if (contentEl) contentEl.innerHTML = templates.dailyMystery.render(state);
 
-    const isUnhinged = (state.dailyIntensity ?? 0) >= 100;
+    const multiPage = templateIsMultiPage(templates.dailyMystery);
     const printSheet = document.getElementById('printSheet');
     const footerContainer = document.getElementById('globalFooterContainer');
-    if (printSheet) printSheet.classList.toggle('multi-page-mode', isUnhinged);
-    if (footerContainer) footerContainer.style.display = isUnhinged ? 'none' : 'block';
+    if (printSheet) printSheet.classList.toggle('multi-page-mode', multiPage);
+    if (footerContainer) footerContainer.style.display = multiPage ? 'none' : 'block';
   }
 }
 
@@ -583,6 +664,7 @@ function initApp() {
 
 // Expose the handlers referenced by inline HTML attributes (onclick/oninput)
 window.setTemplate = setTemplate;
+window.setCategoryFilter = setCategoryFilter;
 window.handleJamSliderChange = handleJamSliderChange;
 window.handleJamFlavorChange = handleJamFlavorChange;
 window.handleToastinessChange = handleToastinessChange;
