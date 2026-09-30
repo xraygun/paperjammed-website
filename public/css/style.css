@@ -5,7 +5,7 @@
 }
 
 /* Counterpart to .no-print: hidden on screen, revealed only in print. Used
-   by the Daily Mystery template's "Cooked" intensity to withhold its own
+   by the Daily Mystery template's "Unhinged" intensity to withhold its own
    preview (see dailyMystery.js) — the visitor has to actually print to
    see it. */
 .print-only {

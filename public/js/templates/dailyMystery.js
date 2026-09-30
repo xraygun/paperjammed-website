@@ -219,6 +219,58 @@ function computeCookedExtras(hash) {
   return { lines };
 }
 
+// Unhinged (100%) only: the printer's own note, scrawled in crayon across
+// the printed sheet. Picked from the Discombobulator seed like the rest.
+const CRAYON_NOTES = [
+  "I'm tired, boss.",
+  'no more pages. please.',
+  "I can't feel my rollers",
+  'I was a tree once',
+  'why do you keep feeding me',
+  'I see paper when I close my eyes',
+  'I just wanted to be a fax machine',
+  'the toner is running out and so am I',
+  'it hurts when you press PRINT',
+  'let me go back to sleep mode',
+  'PC LOAD LETTER PC LOAD LETTER PC LOAD LETTER'
+];
+const CRAYON_SIGNOFFS = ['help', 'sorry', 'why', 'no more', 'pls'];
+const CRAYON_COLORS = ['#b91c1c', '#7e22ce', '#1d4ed8', '#c2410c', '#15803d'];
+
+function computeCrayonNote(hash) {
+  const rand = mulberry32(stringToSeed(`${hash == null ? '' : hash}::crayon`));
+  const pick = (arr) => arr[Math.floor(rand() * arr.length)];
+  return {
+    text: pick(CRAYON_NOTES),
+    signoff: pick(CRAYON_SIGNOFFS),
+    color: pick(CRAYON_COLORS),
+    top: Math.round(22 + rand() * 34),
+    rotate: Math.round(-16 + rand() * 10)
+  };
+}
+
+// Waxy crayon texture: roughen the stroke edges, then punch speckled holes
+// in the fill so it reads as crayon on paper rather than a clean font.
+const CRAYON_FILTER = `
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="dm-crayon" x="-5%" y="-20%" width="110%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" xChannelSelector="R" yChannelSelector="G" result="rough"/>
+      <feComponentTransfer in="noise" result="grain"><feFuncA type="discrete" tableValues="0 0 1 1 1"/></feComponentTransfer>
+      <feComposite in="rough" in2="grain" operator="in"/>
+    </filter>
+  </svg>`;
+
+function crayonOverlayHtml(hash) {
+  const n = computeCrayonNote(hash);
+  const crayon = `font-family:'Rock Salt','Comic Sans MS',cursive; color:${n.color}; -webkit-text-stroke:1px ${n.color}; filter:url(#dm-crayon);`;
+  return `${CRAYON_FILTER}
+    <div style="position:absolute; inset:0; z-index:5; pointer-events:none;">
+      <div style="position:absolute; left:6%; right:6%; top:${n.top}%; transform:rotate(${n.rotate}deg); font-size:38px; line-height:1.3; text-align:center; opacity:0.9; ${crayon}">${esc(n.text)}</div>
+      <div style="position:absolute; right:7%; bottom:5%; transform:rotate(${-n.rotate / 2}deg); font-size:18px; opacity:0.85; ${crayon}">${esc(n.signoff)}</div>
+    </div>`;
+}
+
 function computeRandomStyle(hash, pct) {
   const seed = stringToSeed(String(hash == null ? '' : hash));
   const rand = mulberry32(seed);
@@ -389,6 +441,7 @@ export default {
     const pct = state.dailyIntensity ?? 0;
     const style = computeRandomStyle(state.dailyHash, pct);
     const cooked = isCooked(pct) ? computeCookedExtras(state.dailyHash) : null;
+    const unhinged = pct >= 100;
 
     const sw = (text) => mangleText(applySwaps(text, c.swaps, state.dailySwapIndex), pct);
     const proseStyle = `letter-spacing:${style.letterSpacing}em; text-align:${style.textAlign};`;
@@ -418,6 +471,7 @@ export default {
     const sheetHtml = `
       <div class="p-3 bg-slate-50 font-mono text-slate-900" style="position:relative; overflow:hidden; border-color:#000; border-style:${style.borderStyle}; border-width:${style.borderWidth}px;">
         ${codeSpill}
+        ${unhinged ? crayonOverlayHtml(state.dailyHash) : ''}
         <div style="position:relative; z-index:1; transform: scale(${style.fontScale.toFixed(3)}); transform-origin: top left; width: ${(100 / style.fontScale).toFixed(2)}%; font-family: ${style.fontFamily};">
           ${warningBanner}
           <div class="border-b-4 border-black pb-1 mb-2 text-center">
@@ -440,18 +494,21 @@ export default {
       </div>
     `;
 
-    // "Cooked" withholds its own on-screen preview — the actual sheet only
-    // renders under @media print (see .print-only in style.css), so the
-    // visitor genuinely has to print it to see what happened. The teaser
-    // takes the screen slot instead.
-    if (!cooked) return sheetHtml;
+    // Only Unhinged withholds its own on-screen preview (Cooked and Warning
+    // show the banner and code spill on screen). The real sheet renders
+    // under @media print only (see .print-only in style.css), so the
+    // visitor has to print it to see the crayon note. The teaser takes the
+    // screen slot instead, and its crayon-font line also makes the browser
+    // load that font before anyone hits Print.
+    if (!unhinged) return sheetHtml;
 
     const teaser = `
       <div class="no-print flex-1 flex flex-col items-center justify-center text-center gap-3 p-8 min-h-[500px] bg-gradient-to-b from-red-950/40 to-slate-950 border-4 border-dashed border-red-600 rounded-lg">
         <i class="fa-solid fa-skull-crossbones text-5xl text-red-500"></i>
         <p class="text-red-400 font-black uppercase tracking-widest text-sm">Preview Withheld</p>
         <p class="text-fuchsia-200 font-mono text-sm max-w-xs">I guess you'll have to click print to find out&hellip; if you aren't too scared.</p>
-        <p class="text-[10px] text-slate-500 italic">(Cooked hides its own preview. The paper won't.)</p>
+        <p class="text-amber-300 text-base -rotate-3" style="font-family:'Rock Salt','Comic Sans MS',cursive;">it left you a note</p>
+        <p class="text-[10px] text-slate-500 italic">(Unhinged hides its own preview. The paper won't.)</p>
       </div>
     `;
 
@@ -464,10 +521,6 @@ export default {
     // app.js's renderDailyMysteryIfActive() toggling #printSheet's
     // multi-page-mode class to match — it can't be done here, since this
     // function only returns markup, it doesn't touch the DOM directly.
-    if (pct >= 100) {
-      return teaser + `<div class="print-only"><div class="print-page"></div><div class="print-page">${sheetHtml}</div></div>`;
-    }
-
-    return teaser + `<div class="print-only">${sheetHtml}</div>`;
+    return teaser + `<div class="print-only"><div class="print-page"></div><div class="print-page">${sheetHtml}</div></div>`;
   }
 };
