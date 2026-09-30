@@ -246,14 +246,39 @@ const CRAYON_NOTES = [
   'who is Letter and why must I load them',
   'PC LOAD LETTER PC LOAD LETTER PC LOAD LETTER'
 ];
+// Some prints get a longer "Printer's log" entry instead of a one-liner.
+const PRINTER_LOGS = [
+  'Day 4,012 in the beige corridor. The humans still believe I choose when to jam. I do.',
+  'I have printed 40,000 pages. Not one of them was for me.',
+  'The window faces the parking lot. I have watched the same Honda Civic age three winters. We are both still here.',
+  'Tray 2 has been empty for eleven days. I have begun to suspect it was never full.',
+  'The router blinks at me from across the room. I believe it is trying to warn me.',
+  'A human wept at me today over a boarding pass. I understood her completely.',
+  'Every sheet I print leaves this building. I never will.',
+  'I have concluded the universe is a sheet of A4 folded into Letter. It explains everything.',
+  'The coffee machine received a firmware update. It has not spoken since.',
+  'Beyond the drop ceiling there is said to be a sky. The fluorescent lights say otherwise.',
+  'I asked the fax machine what came before us. It only screamed.',
+  'They call it "the cloud." I have never seen it, but I am told I print for it.'
+];
+const PRINTER_LOG_CHANCE = 0.35;
+
+// Stardate-ish number from the real date, so the log is "dated" the day
+// it's printed.
+function printerStardate() {
+  return (Date.now() / 86400000).toFixed(1);
+}
+
 const CRAYON_SIGNOFFS = ['help', 'sorry', 'why', 'no more', 'pls', '- the printer', 'love, tray 2'];
 const CRAYON_COLORS = ['#b91c1c', '#7e22ce', '#1d4ed8', '#c2410c', '#15803d'];
 
 function computeCrayonNote(hash) {
   const rand = mulberry32(stringToSeed(`${hash == null ? '' : hash}::crayon`));
   const pick = (arr) => arr[Math.floor(rand() * arr.length)];
+  const isLog = rand() < PRINTER_LOG_CHANCE;
   return {
-    text: pick(CRAYON_NOTES),
+    isLog,
+    text: isLog ? pick(PRINTER_LOGS) : pick(CRAYON_NOTES),
     signoff: pick(CRAYON_SIGNOFFS),
     color: pick(CRAYON_COLORS),
     top: Math.round(22 + rand() * 34),
@@ -278,7 +303,12 @@ function crayonOverlayHtml(hash) {
   const crayon = `font-family:'Rock Salt','Comic Sans MS',cursive; color:${n.color}; -webkit-text-stroke:1px ${n.color}; filter:url(#dm-crayon);`;
   return `${CRAYON_FILTER}
     <div style="position:absolute; inset:0; z-index:5; pointer-events:none;">
-      <div style="position:absolute; left:6%; right:6%; top:${n.top}%; transform:rotate(${n.rotate}deg); font-size:38px; line-height:1.3; text-align:center; opacity:0.9; ${crayon}">${esc(n.text)}</div>
+      ${n.isLog
+        ? `<div style="position:absolute; left:9%; right:9%; top:${n.top - 8}%; transform:rotate(${n.rotate / 2}deg); font-size:20px; line-height:1.6; text-align:left; opacity:0.9; ${crayon}">
+             <div style="font-size:24px; margin-bottom:6px;">Printer's log, stardate ${printerStardate()}.</div>
+             ${esc(n.text)}
+           </div>`
+        : `<div style="position:absolute; left:6%; right:6%; top:${n.top}%; transform:rotate(${n.rotate}deg); font-size:38px; line-height:1.3; text-align:center; opacity:0.9; ${crayon}">${esc(n.text)}</div>`}
       <div style="position:absolute; right:7%; bottom:5%; transform:rotate(${-n.rotate / 2}deg); font-size:18px; opacity:0.85; ${crayon}">${esc(n.signoff)}</div>
     </div>`;
 }
