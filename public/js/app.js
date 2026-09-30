@@ -498,6 +498,9 @@ function handleOrderAddressChange(val) {
 // ----------------------------------------------------------------------------
 function updateCustomNote() {
   const inputVal = document.getElementById('customNote')?.value || '';
+  // Kept in state too: templates that print their own copy of the footer
+  // (Daily Mystery's Unhinged page 2) read it from here on every render.
+  state.customNote = inputVal;
   const footnoteEl = document.getElementById('printedFootnote');
   const ghostTechEl = document.getElementById('ghostTechName');
   const kissTechEl = document.getElementById('kissTechName');
