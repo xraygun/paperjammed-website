@@ -8,7 +8,7 @@ export default {
   label: 'Tray Feed Stress Test',
   description: 'Feeds 2–100 sheets. Page 1 prints instructions; all subsequent pages are 100% blank.',
   icon: 'fa-copy',
-  badge: { text: 'NEW!', className: 'bg-cyan-500 text-slate-950' },
+  badge: null,
   borderClasses: 'border-cyan-500/50 hover:border-cyan-400 bg-cyan-950/20 hover:bg-cyan-900/30',
   radioAccent: 'accent-cyan-500',
   labelTextClass: 'text-cyan-300',
