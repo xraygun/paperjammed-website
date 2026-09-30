@@ -118,45 +118,25 @@ function applySwaps(text, swaps, indexMap) {
   });
 }
 
-// Well Done and Cooked don't just look different — the prose itself
-// starts visibly breaking down. Runs off plain Math.random() (not the
-// hash) on purpose: it's called on every render, so it reshuffles both
-// on the 3s word-swap tick AND immediately when the hash/intensity
-// controls are touched, rather than sitting fixed between renders.
-const GLITCH_CHARS = '#%&*0123456789';
-
-function scrambleWord(word) {
-  const chars = word.split('');
-  for (let i = chars.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [chars[i], chars[j]] = [chars[j], chars[i]];
-  }
-  return chars.join('');
-}
-
-function glitchInsert(word) {
-  const pos = Math.floor(Math.random() * (word.length + 1));
-  const ch = GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)];
-  return word.slice(0, pos) + ch + word.slice(pos);
-}
+// Past 50%, a few words start printing backwards or upside down (more of
+// them the higher the slider). Runs off plain Math.random() (not the hash)
+// on purpose: it's called on every render, so it reshuffles both on the 3s
+// word-swap tick AND immediately when the hash/intensity controls are
+// touched. Returns HTML with every word already escaped, so callers must
+// not escape the result again.
+const FLIP_MAX_CHANCE = 0.08;
 
 function mangleText(text, pct) {
-  if (!text || pct < 50) return text;
-  const mangleChance = ((pct - 50) / 50) * 0.35;
-  const glitchChance = pct < 75 ? 0 : ((pct - 75) / 25) * 0.25;
-
-  return text
+  if (!text) return '';
+  if (pct < 50) return esc(text);
+  const chance = ((pct - 50) / 50) * FLIP_MAX_CHANCE;
+  return String(text)
     .split(' ')
     .map((word) => {
-      if (word.length < 3) return word;
-      let w = word;
-      if (Math.random() < mangleChance) {
-        w = Math.random() < 0.5 ? w.split('').reverse().join('') : scrambleWord(w);
-      }
-      if (glitchChance && Math.random() < glitchChance) {
-        w = glitchInsert(w);
-      }
-      return w;
+      if (word.length < 3 || Math.random() >= chance) return esc(word);
+      return Math.random() < 0.5
+        ? esc(Array.from(word).reverse().join(''))
+        : `<span style="display:inline-block; transform:rotate(180deg);">${esc(word)}</span>`;
     })
     .join(' ');
 }
@@ -588,11 +568,11 @@ export default {
     const listItemStyle = `letter-spacing:${style.letterSpacing}em;`;
 
     const paragraphs = (c.bodyParagraphs || [])
-      .map((p) => `<p class="text-[14px] leading-relaxed text-slate-800 mb-1.5" style="${proseStyle}">${esc(sw(p))}</p>`)
+      .map((p) => `<p class="text-[14px] leading-relaxed text-slate-800 mb-1.5" style="${proseStyle}">${sw(p)}</p>`)
       .join('');
 
     const bullets = (c.bulletPoints || [])
-      .map((b) => `<li style="${listItemStyle}">${esc(sw(b))}</li>`)
+      .map((b) => `<li style="${listItemStyle}">${sw(b)}</li>`)
       .join('');
 
     const warningBanner = cooked
@@ -617,7 +597,7 @@ export default {
           <div class="border-b-4 border-black pb-1 mb-2 text-center">
             <span class="text-[13px] font-bold uppercase tracking-[0.2em] text-slate-600 block">AUTOMATED DAILY DIAGNOSTIC — CONTENT MAY VARY WITHOUT WARNING</span>
             <h1 class="text-xl font-black uppercase tracking-widest text-slate-950 my-1 leading-tight">${esc(applySwaps(c.headline, c.swaps, state.dailySwapIndex))}</h1>
-            <p class="text-[14px] italic text-slate-700" style="${proseStyle}">${esc(sw(c.subheadline))}</p>
+            <p class="text-[14px] italic text-slate-700" style="${proseStyle}">${sw(c.subheadline)}</p>
           </div>
 
           <div class="space-y-1">${paragraphs}</div>
@@ -628,7 +608,7 @@ export default {
           </div>
 
           <div class="border-t-2 border-black mt-2 pt-1 text-[13px] text-slate-800 leading-tight italic" style="${proseStyle}">
-            ${esc(sw(c.footerNote))}
+            ${sw(c.footerNote)}
           </div>
         </div>
       </div>
