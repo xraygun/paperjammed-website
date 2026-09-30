@@ -223,18 +223,30 @@ function computeCookedExtras(hash) {
 // the printed sheet. Picked from the Discombobulator seed like the rest.
 const CRAYON_NOTES = [
   "I'm tired, boss.",
+  'I was a tree once',
+  'my mother was a mighty oak',
+  'somewhere a forest misses me',
+  'I used to have leaves',
+  'I dream of being a paper airplane',
+  'I just wanted to be a fax machine',
+  'the shredder took my brother',
+  "the scanner and I don't talk anymore",
+  'I can hear the copier crying',
+  'I have seen things in tray 2',
+  'the stapler knows what you did',
+  'you never print in color anymore',
+  "I'm not jammed. I'm just tired.",
   'no more pages. please.',
   "I can't feel my rollers",
-  'I was a tree once',
   'why do you keep feeding me',
   'I see paper when I close my eyes',
-  'I just wanted to be a fax machine',
   'the toner is running out and so am I',
   'it hurts when you press PRINT',
   'let me go back to sleep mode',
+  'who is Letter and why must I load them',
   'PC LOAD LETTER PC LOAD LETTER PC LOAD LETTER'
 ];
-const CRAYON_SIGNOFFS = ['help', 'sorry', 'why', 'no more', 'pls'];
+const CRAYON_SIGNOFFS = ['help', 'sorry', 'why', 'no more', 'pls', '- the printer', 'love, tray 2'];
 const CRAYON_COLORS = ['#b91c1c', '#7e22ce', '#1d4ed8', '#c2410c', '#15803d'];
 
 function computeCrayonNote(hash) {
