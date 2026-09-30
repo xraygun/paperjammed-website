@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Scrollbar Options | PaperJammed.net</title>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+  <!-- Throwaway demo page for picking a scrollbar style. Not linked from
+       the site; remove once one is chosen. -->
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #0f172a; color: #cbd5e1; font: 15px/1.6 system-ui, sans-serif; }
+    main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 60px; }
+    h1 { color: #f1f5f9; font-size: 24px; margin: 0 0 4px; }
+    .lede { color: #94a3b8; margin: 0 0 24px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; }
+    .card h2 { margin: 0; color: #f1f5f9; font-size: 17px; }
+    .card p.desc { margin: 4px 0 12px; color: #94a3b8; font-size: 13px; }
+    .box { height: 260px; overflow-y: scroll; background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px 14px; }
+    .box p { margin: 0 0 10px; font-size: 13px; }
+    .note { margin-top: 28px; font-size: 13px; color: #94a3b8; }
+
+    /* ---- Option A: Toner (slim, quiet, rose on hover) ---- */
+    .toner::-webkit-scrollbar { width: 10px; }
+    .toner::-webkit-scrollbar-track { background: #0f172a; }
+    .toner::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; border: 2px solid #0f172a; }
+    .toner::-webkit-scrollbar-thumb:hover { background: #f43f5e; }
+
+    /* ---- Option B: CMYK (thumb is the calibration bar) ---- */
+    .cmyk::-webkit-scrollbar { width: 12px; }
+    .cmyk::-webkit-scrollbar-track { background: #0f172a; border-left: 1px solid #1e293b; }
+    .cmyk::-webkit-scrollbar-thumb {
+      border-radius: 3px;
+      background: linear-gradient(to bottom, #06b6d4 0 25%, #c026d3 25% 50%, #facc15 50% 75%, #020617 75% 100%);
+      border: 2px solid #0f172a;
+      box-shadow: inset 0 0 0 1px #64748b;
+    }
+    .cmyk::-webkit-scrollbar-thumb:hover { box-shadow: inset 0 0 0 1px #f1f5f9; }
+
+    /* ---- Option C: Tractor feed (dot-matrix paper edge) ---- */
+    .tractor::-webkit-scrollbar { width: 16px; }
+    .tractor::-webkit-scrollbar-track {
+      background:
+        radial-gradient(circle at 50% 50%, #0f172a 3px, transparent 3.5px) 0 0 / 16px 16px repeat-y,
+        #e2e8f0;
+      border-left: 1px dashed #94a3b8;
+    }
+    .tractor::-webkit-scrollbar-thumb {
+      background:
+        radial-gradient(circle at 50% 50%, #0f172a 3px, transparent 3.5px) 0 0 / 16px 16px repeat-y,
+        #f43f5e;
+      border-left: 1px dashed #fda4af;
+    }
+
+    /* Firefox can't draw gradients or patterns in scrollbars; it only gets
+       colours. (Chrome ignores the ::-webkit rules above if scrollbar-color
+       is set, so it's applied to Firefox only.) */
+    @supports not selector(::-webkit-scrollbar) {
+      .toner { scrollbar-color: #475569 #0f172a; scrollbar-width: thin; }
+      .cmyk { scrollbar-color: #c026d3 #0f172a; scrollbar-width: thin; }
+      .tractor { scrollbar-color: #f43f5e #e2e8f0; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Scrollbar options</h1>
+    <p class="lede">Scroll each box. The page's own scrollbar and the template list would get whichever you pick.</p>
+    <div class="grid" id="grid"></div>
+    <p class="note">Phones and tablets use their own thin overlay scrollbars, so this only changes desktop browsers. Firefox shows colour-only versions (no stripes or holes).</p>
+  </main>
+  <script>
+    const options = [
+      ['toner', 'A. Toner', 'Slim and quiet: slate thumb that turns rose on hover. Blends in.'],
+      ['cmyk', 'B. CMYK', 'The thumb is the calibration bar: cyan, magenta, yellow, black.'],
+      ['tractor', 'C. Tractor feed', 'The perforated hole strip from continuous dot-matrix paper.']
+    ];
+    const filler = Array.from({ length: 14 }, (_, i) =>
+      `<p>Line ${i + 1}: PC LOAD LETTER. The toner is running out and so am I. Please remove the paper jam and try again.</p>`).join('');
+    document.getElementById('grid').innerHTML = options.map(([cls, title, desc]) =>
+      `<div class="card"><h2>${title}</h2><p class="desc">${desc}</p><div class="box ${cls}">${filler}</div></div>`).join('');
+  </script>
+</body>
+</html>
