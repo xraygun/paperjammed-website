@@ -3,7 +3,7 @@ export default {
   label: 'Spaceball One',
   description: 'High-speed print test with CMYK bars, a Ludicrous Speed status log, and an abrupt plaid transition.',
   icon: 'fa-jedi',
-  badge: { text: 'NEW', className: 'bg-amber-500 text-slate-950' },
+  badge: null,
   borderClasses: 'border-slate-700 hover:border-slate-500 bg-slate-800/50 hover:bg-slate-700/50',
   radioAccent: 'accent-amber-500',
   labelTextClass: 'text-amber-300',
