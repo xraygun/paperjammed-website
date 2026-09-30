@@ -23,27 +23,40 @@ const state = {
 };
 
 // ----------------------------------------------------------------------------
-// Print counter (localStorage cache + best-effort Cloudflare Worker sync)
+// Print counter (live total from the Cloudflare Worker proxy)
 // ----------------------------------------------------------------------------
-function getLocalCount() {
-  try {
-    const raw = localStorage.getItem('pj_print_count');
-    const parsed = parseInt(raw || '0', 10);
-    return isNaN(parsed) ? 0 : parsed;
-  } catch (e) {
-    return 0;
-  }
-}
+// The header shows 1 until the live total arrives, then counts up to it.
+// Nothing is cached in the browser, so the number shown is never higher
+// than the real one.
+const COUNT_UP_MS = 900;
+let displayedCount = 1;
+let countUpFrame = null;
 
-function setLocalCount(val) {
-  const num = parseInt(val, 10) || 0;
-  try {
-    localStorage.setItem('pj_print_count', num);
-  } catch (e) {
-    // Fallback: ignore storage errors (e.g. private browsing)
-  }
+function showCount(num) {
+  displayedCount = num;
   const el = document.getElementById('globalPrintCount');
   if (el) el.innerText = num.toLocaleString();
+}
+
+function countUpTo(target) {
+  if (countUpFrame) cancelAnimationFrame(countUpFrame);
+  const from = Math.min(displayedCount, target);
+  const start = performance.now();
+  const step = (now) => {
+    const t = Math.min(1, (now - start) / COUNT_UP_MS);
+    const eased = 1 - Math.pow(1 - t, 3);
+    showCount(Math.round(from + (target - from) * eased));
+    countUpFrame = t < 1 ? requestAnimationFrame(step) : null;
+  };
+  countUpFrame = requestAnimationFrame(step);
+}
+
+function parseServerCount(json) {
+  const val = parseInt(
+    json?.data?.up_count ?? json?.data?.value ?? json?.up_count ?? json?.value ?? NaN,
+    10
+  );
+  return isNaN(val) ? null : val;
 }
 
 function setSyncStatus(isLive) {
@@ -54,14 +67,15 @@ function setSyncStatus(isLive) {
       dot.title = 'Cloud Synced (Cloudflare Worker Proxy)';
     } else {
       dot.className = 'w-2 h-2 rounded-full bg-amber-400';
-      dot.title = 'Offline / Local Cache Fallback Mode';
+      dot.title = 'Counter offline';
     }
   }
 }
 
 async function loadPrintCount() {
-  const localVal = getLocalCount();
-  setLocalCount(localVal);
+  showCount(1);
+  // Earlier versions cached the total here; clear it from returning browsers.
+  try { localStorage.removeItem('pj_print_count'); } catch (e) {}
 
   try {
     const controller = new AbortController();
@@ -74,18 +88,11 @@ async function loadPrintCount() {
 
     clearTimeout(timeoutId);
 
-    if (res && res.ok) {
-      const json = await res.json().catch(() => null);
-      if (json) {
-        const serverVal = parseInt(
-          json?.data?.up_count ?? json?.data?.value ?? json?.up_count ?? json?.value ?? 0,
-          10
-        );
-        if (!isNaN(serverVal)) {
-          setLocalCount(serverVal);
-        }
-        setSyncStatus(true);
-      }
+    const json = res && res.ok ? await res.json().catch(() => null) : null;
+    const serverVal = json ? parseServerCount(json) : null;
+    if (serverVal !== null) {
+      countUpTo(serverVal);
+      setSyncStatus(true);
     } else {
       setSyncStatus(false);
     }
@@ -124,9 +131,8 @@ function incrementCounter() {
   if (isInCooldown()) return;
   markIncrementTime();
 
-  const currentVal = getLocalCount();
-  const nextVal = currentVal + 1;
-  setLocalCount(nextVal);
+  if (countUpFrame) cancelAnimationFrame(countUpFrame);
+  showCount(displayedCount + 1);
 
   try {
     fetch(`${API_ENDPOINT}?action=up&t=${Date.now()}`, {
@@ -134,14 +140,9 @@ function incrementCounter() {
     }).then(async (res) => {
       if (res && res.ok) {
         const json = await res.json().catch(() => null);
-        if (json) {
-          const serverVal = parseInt(
-            json?.data?.up_count ?? json?.data?.value ?? json?.up_count ?? json?.value ?? 0,
-            10
-          );
-          if (!isNaN(serverVal) && serverVal > 0) {
-            setLocalCount(serverVal);
-          }
+        const serverVal = json ? parseServerCount(json) : null;
+        if (serverVal !== null && serverVal > 0) {
+          showCount(serverVal);
         }
         setSyncStatus(true);
       } else {

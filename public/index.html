@@ -81,7 +81,7 @@
         <div id="counterBadge" class="text-xs bg-slate-900/80 text-emerald-400 border border-emerald-500/30 px-3 max-sm:px-2 py-1.5 rounded-lg font-mono flex items-center gap-2 max-sm:gap-1.5 shadow-inner" title="Global Print Counter (Synced via Cloudflare Worker Proxy)">
           <span id="syncStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="Cloud Synced"></span>
           <i class="fa-solid fa-fire text-amber-400 text-sm"></i>
-          <span><strong id="globalPrintCount">0</strong><span class="max-sm:hidden"> Pages Printed</span></span>
+          <span><strong id="globalPrintCount">1</strong><span class="max-sm:hidden"> Pages Printed</span></span>
         </div>
 
         <button onclick="handlePrintAction()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-2.5 max-sm:px-3 max-sm:py-2 rounded-lg shadow-lg flex items-center justify-center gap-2 transition duration-200 cursor-pointer">
@@ -139,6 +139,13 @@
         <p>Adding a new printer doesn't automatically list it in Chrome's primary destination dropdown without clicking "See more..." to select it from available system printers. Running a quick test print right after setup eliminates a return trip to the user 30 minutes later—now with more laughs!</p>
       </div>
 
+      <!-- Phones get no footer (see below), so its links live here instead. -->
+      <p class="no-print lg:hidden text-center text-xs text-slate-500 pb-2">
+        <a href="/privacy.html" class="underline hover:text-slate-300">Privacy</a>
+        &middot;
+        <a href="mailto:contact@paperjammed.net" class="underline hover:text-slate-300">Contact</a>
+      </p>
+
     </aside>
 
     <!-- MAIN PREVIEW CANVAS (Print Area) -->
@@ -189,7 +196,8 @@
 
   <!-- FOOTER (No Print) — desktop only. The mobile layout is a fixed-height
        split (header + two independently-scrolling panes) with no spare
-       room for it; contact info is still reachable via a laptop/desktop. -->
+       room for it; the Privacy/Contact links are repeated at the bottom of
+       the sidebar for phones. -->
   <footer class="no-print hidden lg:block bg-slate-800 border-t border-slate-700 py-6 px-4 mt-12 text-center text-xs text-slate-400">
     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
       <p>PaperJammed.net — More updates on the way!</p>
@@ -201,6 +209,8 @@
              forwarding rule in the Cloudflare dashboard; nothing here needs
              to change. -->
         <a href="mailto:contact@paperjammed.net" class="text-rose-400 hover:text-rose-300 underline transition-colors">contact@paperjammed.net</a>
+        &middot;
+        <a href="/privacy.html" class="text-rose-400 hover:text-rose-300 underline transition-colors">Privacy</a>
       </p>
     </div>
   </footer>
