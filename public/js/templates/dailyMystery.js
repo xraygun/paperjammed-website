@@ -309,7 +309,7 @@ function crayonNoteHtml(hash) {
        <div style="font-size:19px; line-height:1.6;">${esc(n.text)}</div>`
     : `<div style="font-size:32px; line-height:1.3; text-align:center;">${esc(n.text)}</div>`;
   return `${CRAYON_FILTER}
-    <div style="flex:none; margin-top:18px; padding:0 5%; transform:rotate(${n.rotate}deg); opacity:0.9; ${crayon}">
+    <div style="position:relative; z-index:11; flex:none; margin-top:18px; padding:0 5%; transform:rotate(${n.rotate}deg); opacity:0.9; ${crayon}">
       ${body}
       <div style="text-align:right; font-size:17px; margin-top:8px;">${esc(n.signoff)}</div>
     </div>`;
@@ -317,6 +317,56 @@ function crayonNoteHtml(hash) {
 
 // A printer-drum scratch: one streak from the top edge of the paper to the
 // bottom, straight through everything on the page.
+// Running out of toner: every text line from the second prints 5% lighter
+// than the one above it, bottoming out at 10% so the page never goes fully
+// blank. Lines are approximated as steps of the body text's line height.
+const FADE_LINE_PX = 22;
+const FADE_STEP = 0.05;
+const FADE_FLOOR = 0.1;
+
+function tonerFadeMask() {
+  const stops = [];
+  for (let line = 0; line < 60; line++) {
+    const alpha = Math.max(FADE_FLOOR, 1 - FADE_STEP * Math.max(0, line - 1));
+    stops.push(`rgba(0,0,0,${alpha.toFixed(2)}) ${line * FADE_LINE_PX}px`, `rgba(0,0,0,${alpha.toFixed(2)}) ${(line + 1) * FADE_LINE_PX}px`);
+  }
+  const gradient = `linear-gradient(to bottom, ${stops.join(', ')})`;
+  return `-webkit-mask-image:${gradient}; mask-image:${gradient};`;
+}
+
+// Classic laser-printer defects, scattered over the whole of page 2:
+// toner specks, a repeating roller mark down one side, a fuser smudge, and
+// a pale horizontal band where the drum skipped. Seeded like everything else.
+function printDefectsHtml(hash) {
+  const rand = mulberry32(stringToSeed(`${hash == null ? '' : hash}::defects`));
+  const marks = [];
+
+  const specks = 25 + Math.floor(rand() * 20);
+  for (let i = 0; i < specks; i++) {
+    const size = 1 + rand() * (rand() < 0.15 ? 5 : 2);
+    marks.push(`<div style="position:absolute; top:${(rand() * 98).toFixed(1)}%; left:${(rand() * 98).toFixed(1)}%; width:${size.toFixed(1)}px; height:${(size * (0.6 + rand() * 0.8)).toFixed(1)}px; border-radius:50%; background:#111; opacity:${(0.5 + rand() * 0.45).toFixed(2)};"></div>`);
+  }
+
+  const rollerX = rand() < 0.5 ? 3 + rand() * 6 : 91 + rand() * 6;
+  const rollerStart = 4 + rand() * 18;
+  for (let y = rollerStart; y < 98; y += 27.5) {
+    marks.push(`<div style="position:absolute; top:${y.toFixed(1)}%; left:${rollerX.toFixed(1)}%; width:7px; height:3px; border-radius:40%; background:#222; opacity:0.7; transform:rotate(${Math.round(rand() * 30 - 15)}deg);"></div>`);
+  }
+
+  const smudgeSize = 70 + rand() * 70;
+  marks.push(`<div style="position:absolute; top:${(10 + rand() * 75).toFixed(1)}%; ${rand() < 0.5 ? 'left' : 'right'}:${(rand() * 6).toFixed(1)}%; width:${smudgeSize.toFixed(0)}px; height:${(smudgeSize * 0.45).toFixed(0)}px; border-radius:50%; background:radial-gradient(ellipse at center, rgba(40,40,40,0.35), rgba(40,40,40,0) 70%); transform:rotate(${Math.round(rand() * 40 - 20)}deg);"></div>`);
+
+  marks.push(`<div style="position:absolute; left:0; right:0; top:${(20 + rand() * 60).toFixed(1)}%; height:${(14 + rand() * 18).toFixed(0)}px; background:rgba(255,255,255,0.55);"></div>`);
+
+  return `<div style="position:absolute; inset:0; z-index:8; pointer-events:none;">${marks.join('')}</div>`;
+}
+
+// Ghosting: a faint second copy of the headline further down the page,
+// roughly one drum rotation below the real one.
+function ghostHeadlineHtml(text) {
+  return `<div aria-hidden="true" style="position:absolute; left:10mm; right:10mm; top:38%; z-index:8; text-align:center; opacity:0.13; pointer-events:none;"><span class="text-xl font-black uppercase tracking-widest text-slate-950" style="font-family:'Courier New',monospace; font-size:20px; font-weight:900;">${text}</span></div>`;
+}
+
 function drumStreakHtml(hash) {
   const n = computeCrayonNote(hash);
   return `<div style="position:absolute; top:0; bottom:0; left:${n.streakLeft}%; width:2px; z-index:10; pointer-events:none; background:#000;"></div>`;
@@ -522,7 +572,7 @@ export default {
     const sheetHtml = `
       <div class="p-3 bg-slate-50 font-mono text-slate-900" style="position:relative; overflow:hidden; ${unhinged ? 'flex:0 1 auto; min-height:0;' : ''} border-color:#000; border-style:${style.borderStyle}; border-width:${style.borderWidth}px;">
         ${codeSpill}
-        <div style="position:relative; z-index:1; transform: scale(${style.fontScale.toFixed(3)}); transform-origin: top left; width: ${(100 / style.fontScale).toFixed(2)}%; font-family: ${style.fontFamily};">
+        <div style="position:relative; z-index:1; ${unhinged ? tonerFadeMask() : ''} transform: scale(${style.fontScale.toFixed(3)}); transform-origin: top left; width: ${(100 / style.fontScale).toFixed(2)}%; font-family: ${style.fontFamily};">
           ${warningBanner}
           <div class="border-b-4 border-black pb-1 mb-2 text-center">
             <span class="text-[13px] font-bold uppercase tracking-[0.2em] text-slate-600 block">AUTOMATED DAILY DIAGNOSTIC — CONTENT MAY VARY WITHOUT WARNING</span>
@@ -571,6 +621,6 @@ export default {
     // app.js's renderDailyMysteryIfActive() toggling #printSheet's
     // multi-page-mode class to match — it can't be done here, since this
     // function only returns markup, it doesn't touch the DOM directly.
-    return teaser + `<div class="print-only"><div class="print-page"></div><div class="print-page" style="position:relative; display:flex; flex-direction:column;">${drumStreakHtml(state.dailyHash)}${sheetHtml}${crayonNoteHtml(state.dailyHash)}</div></div>`;
+    return teaser + `<div class="print-only"><div class="print-page"></div><div class="print-page" style="position:relative; display:flex; flex-direction:column; height:100vh !important; max-height:100vh !important;">${drumStreakHtml(state.dailyHash)}${printDefectsHtml(state.dailyHash)}${ghostHeadlineHtml(esc(applySwaps(c.headline, c.swaps, state.dailySwapIndex)))}${sheetHtml}${crayonNoteHtml(state.dailyHash)}</div></div>`;
   }
 };
