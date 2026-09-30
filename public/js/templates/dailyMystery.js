@@ -219,7 +219,7 @@ function computeCookedExtras(hash) {
   return { lines };
 }
 
-// Unhinged (100%) only: the printer's own note, scrawled in crayon across
+// Unhinged (100%) only: the printer's own note, scrawled in red crayon under
 // the printed sheet. Picked from the Discombobulator seed like the rest.
 const CRAYON_NOTES = [
   "I'm tired, boss.",
@@ -270,7 +270,7 @@ function printerStardate() {
 }
 
 const CRAYON_SIGNOFFS = ['help', 'sorry', 'why', 'no more', 'pls', '- the printer', 'love, tray 2'];
-const CRAYON_COLORS = ['#b91c1c', '#7e22ce', '#1d4ed8', '#c2410c', '#15803d'];
+const CRAYON_RED = '#c1121f';
 
 function computeCrayonNote(hash) {
   const rand = mulberry32(stringToSeed(`${hash == null ? '' : hash}::crayon`));
@@ -280,9 +280,8 @@ function computeCrayonNote(hash) {
     isLog,
     text: isLog ? pick(PRINTER_LOGS) : pick(CRAYON_NOTES),
     signoff: pick(CRAYON_SIGNOFFS),
-    color: pick(CRAYON_COLORS),
-    top: Math.round(22 + rand() * 34),
-    rotate: Math.round(-16 + rand() * 10)
+    rotate: -1 - Math.round(rand() * 3),
+    streakLeft: Math.round(12 + rand() * 76)
   };
 }
 
@@ -298,19 +297,29 @@ const CRAYON_FILTER = `
     </filter>
   </svg>`;
 
-function crayonOverlayHtml(hash) {
+// Written underneath the bordered sheet (not over it), with a slight tilt
+// that keeps it inside the page. Page 2 is a flex column and the sheet is
+// allowed to shrink, so a long sheet gets clipped inside its own border
+// rather than pushing the note off the page.
+function crayonNoteHtml(hash) {
   const n = computeCrayonNote(hash);
-  const crayon = `font-family:'Rock Salt','Comic Sans MS',cursive; color:${n.color}; -webkit-text-stroke:1px ${n.color}; filter:url(#dm-crayon);`;
+  const crayon = `font-family:'Rock Salt','Comic Sans MS',cursive; color:${CRAYON_RED}; -webkit-text-stroke:1px ${CRAYON_RED}; filter:url(#dm-crayon);`;
+  const body = n.isLog
+    ? `<div style="font-size:22px; margin-bottom:6px;">Printer's log, stardate ${printerStardate()}.</div>
+       <div style="font-size:19px; line-height:1.6;">${esc(n.text)}</div>`
+    : `<div style="font-size:32px; line-height:1.3; text-align:center;">${esc(n.text)}</div>`;
   return `${CRAYON_FILTER}
-    <div style="position:absolute; inset:0; z-index:5; pointer-events:none;">
-      ${n.isLog
-        ? `<div style="position:absolute; left:9%; right:9%; top:${n.top - 8}%; transform:rotate(${n.rotate / 2}deg); font-size:20px; line-height:1.6; text-align:left; opacity:0.9; ${crayon}">
-             <div style="font-size:24px; margin-bottom:6px;">Printer's log, stardate ${printerStardate()}.</div>
-             ${esc(n.text)}
-           </div>`
-        : `<div style="position:absolute; left:6%; right:6%; top:${n.top}%; transform:rotate(${n.rotate}deg); font-size:38px; line-height:1.3; text-align:center; opacity:0.9; ${crayon}">${esc(n.text)}</div>`}
-      <div style="position:absolute; right:7%; bottom:5%; transform:rotate(${-n.rotate / 2}deg); font-size:18px; opacity:0.85; ${crayon}">${esc(n.signoff)}</div>
+    <div style="flex:none; margin-top:18px; padding:0 5%; transform:rotate(${n.rotate}deg); opacity:0.9; ${crayon}">
+      ${body}
+      <div style="text-align:right; font-size:17px; margin-top:8px;">${esc(n.signoff)}</div>
     </div>`;
+}
+
+// A printer-drum scratch: one streak from the top edge of the paper to the
+// bottom, straight through everything on the page.
+function drumStreakHtml(hash) {
+  const n = computeCrayonNote(hash);
+  return `<div style="position:absolute; top:0; bottom:0; left:${n.streakLeft}%; width:2px; z-index:10; pointer-events:none; background:#000;"></div>`;
 }
 
 function computeRandomStyle(hash, pct) {
@@ -511,9 +520,8 @@ export default {
       : '';
 
     const sheetHtml = `
-      <div class="p-3 bg-slate-50 font-mono text-slate-900" style="position:relative; overflow:hidden; border-color:#000; border-style:${style.borderStyle}; border-width:${style.borderWidth}px;">
+      <div class="p-3 bg-slate-50 font-mono text-slate-900" style="position:relative; overflow:hidden; ${unhinged ? 'flex:0 1 auto; min-height:0;' : ''} border-color:#000; border-style:${style.borderStyle}; border-width:${style.borderWidth}px;">
         ${codeSpill}
-        ${unhinged ? crayonOverlayHtml(state.dailyHash) : ''}
         <div style="position:relative; z-index:1; transform: scale(${style.fontScale.toFixed(3)}); transform-origin: top left; width: ${(100 / style.fontScale).toFixed(2)}%; font-family: ${style.fontFamily};">
           ${warningBanner}
           <div class="border-b-4 border-black pb-1 mb-2 text-center">
@@ -563,6 +571,6 @@ export default {
     // app.js's renderDailyMysteryIfActive() toggling #printSheet's
     // multi-page-mode class to match — it can't be done here, since this
     // function only returns markup, it doesn't touch the DOM directly.
-    return teaser + `<div class="print-only"><div class="print-page"></div><div class="print-page">${sheetHtml}</div></div>`;
+    return teaser + `<div class="print-only"><div class="print-page"></div><div class="print-page" style="position:relative; display:flex; flex-direction:column;">${drumStreakHtml(state.dailyHash)}${sheetHtml}${crayonNoteHtml(state.dailyHash)}</div></div>`;
   }
 };
