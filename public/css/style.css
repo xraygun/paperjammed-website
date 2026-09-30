@@ -166,6 +166,62 @@
   pointer-events: none;
 }
 
+/* Template list (#sidebar): continuous tractor-feed paper. The left strip
+   is painted on the list itself with background-attachment: local, so its
+   holes travel with the content as it scrolls, like paper feeding through.
+   The right strip is the real scrollbar: a perforated track with a light
+   grey handle. Touch devices don't reliably draw styled scrollbars, so
+   there the real one is hidden and the right strip is painted as a second
+   background instead. */
+#sidebar {
+  --feed-paper: #f8fafc;
+  --feed-hole: #0f172a;
+  --feed-perf: #94a3b8;
+  padding-left: 22px;
+  background:
+    linear-gradient(var(--feed-perf) 50%, transparent 50%) 16px 0 / 1px 6px repeat-y local,
+    radial-gradient(circle at 8px 8px, var(--feed-hole) 3px, var(--feed-paper) 3.5px) 0 0 / 16px 16px repeat-y local;
+}
+#sidebar::-webkit-scrollbar { width: 16px; }
+#sidebar::-webkit-scrollbar-track {
+  background: radial-gradient(circle at 8px 8px, var(--feed-hole) 3px, var(--feed-paper) 3.5px) 0 0 / 16px 16px repeat-y;
+  border-left: 1px dashed var(--feed-perf);
+}
+#sidebar::-webkit-scrollbar-thumb {
+  background: radial-gradient(circle at 8px 8px, var(--feed-hole) 3px, #cbd5e1 3.5px) 0 0 / 16px 16px repeat-y;
+  border-left: 1px dashed #64748b;
+}
+@media (hover: none) and (pointer: coarse) {
+  #sidebar::-webkit-scrollbar { display: none; }
+  #sidebar {
+    scrollbar-width: none;
+    padding-right: 22px;
+    background:
+      linear-gradient(var(--feed-perf) 50%, transparent 50%) 16px 0 / 1px 6px repeat-y local,
+      radial-gradient(circle at 8px 8px, var(--feed-hole) 3px, var(--feed-paper) 3.5px) 0 0 / 16px 16px repeat-y local,
+      linear-gradient(var(--feed-perf) 50%, transparent 50%) calc(100% - 16px) 0 / 1px 6px repeat-y local,
+      radial-gradient(circle at 8px 8px, var(--feed-hole) 3px, var(--feed-paper) 3.5px) 100% 0 / 16px 16px repeat-y local;
+  }
+}
+
+/* Category chip row: a thin horizontal scrollbar whose handle is the CMYK
+   calibration bar printed on every test page. */
+#categoryFilter::-webkit-scrollbar { height: 8px; }
+#categoryFilter::-webkit-scrollbar-track { background: transparent; }
+#categoryFilter::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: linear-gradient(to right, #06b6d4 0 25%, #c026d3 25% 50%, #facc15 50% 75%, #000 75% 100%);
+  box-shadow: inset 0 0 0 1px #64748b;
+}
+
+/* Firefox can only colour scrollbars (no holes or stripes). Chrome ignores
+   the ::-webkit rules above whenever scrollbar-color is set, so these are
+   limited to browsers without ::-webkit-scrollbar. */
+@supports not selector(::-webkit-scrollbar) {
+  #sidebar { scrollbar-color: #cbd5e1 var(--feed-paper); }
+  #categoryFilter { scrollbar-color: #c026d3 transparent; scrollbar-width: thin; }
+}
+
 /* Temple of Unhinged Testpages — sidebar button only (already inside the
    .no-print sidebar, so none of this needs its own print handling).
    Two pieces: the label's per-letter color cycling, and the black
