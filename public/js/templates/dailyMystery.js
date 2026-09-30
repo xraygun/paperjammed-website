@@ -367,6 +367,45 @@ function ghostHeadlineHtml(text) {
   return `<div aria-hidden="true" style="position:absolute; left:10mm; right:10mm; top:38%; z-index:8; text-align:center; opacity:0.13; pointer-events:none;"><span class="text-xl font-black uppercase tracking-widest text-slate-950" style="font-family:'Courier New',monospace; font-size:20px; font-weight:900;">${text}</span></div>`;
 }
 
+// Wrong-driver garbage: what a printer produces when it's sent raw PCL or
+// PostScript it doesn't understand. A few lines print at the very top of
+// page 2, cut off at the paper edge like the real thing.
+const DRIVER_GARBAGE = [
+  '@PJL JOB NAME="test_page_FINAL_v2(3).docx"',
+  '@PJL ENTER LANGUAGE = POSTSCRIPT',
+  '%!PS-Adobe-3.0 %%Creator: ??? %%Title: (untitled) %%Pages: (atend)',
+  '←E←&l0O←&l26A←(s0p16.67h8.5v0s0b0T←&k2G',
+  'ÿØÿà JFIF ÿÛ C ÿÀ ÿÄ ÿÚ ¢Š(¢Š(¢Š( ÿÙ',
+  'Ã¢â‚¬Å“TEST PAGEÃ¢â‚¬Â Ã‚Â© Ã¯Â»Â¿',
+  '%%BoundingBox: 0 0 612 792 %%DocumentNeededResources: font Helvetica-Sanity',
+  'PCL XL error   Subsystem: KERNEL   Error: IllegalOperatorSequence   Operator: EndSession',
+  'ERROR: undefined   OFFENDING COMMAND: showpage   STACK: -mark- /feelings',
+  '%PDF-1.7 %âãÏÓ 4 0 obj <</Linearized 1/L 83412/O 6/E 79110/N 1/T 83107/H [ 448 159]>>'
+];
+
+function driverGarbageHtml(hash) {
+  const rand = mulberry32(stringToSeed(`${hash == null ? '' : hash}::driver`));
+  const pool = DRIVER_GARBAGE.slice();
+  const lines = [];
+  const count = 2 + Math.floor(rand() * 3);
+  for (let i = 0; i < count; i++) lines.push(pool.splice(Math.floor(rand() * pool.length), 1)[0]);
+  return `<div style="flex:none; margin:-4mm 0 6px; font-family:'Courier New',monospace; font-size:13px; line-height:1.35; color:#000; white-space:nowrap; overflow:hidden;">${lines.map((l) => `<div>${esc(l)}</div>`).join('')}</div>`;
+}
+
+// Replaces the sheet's line border on Unhinged: a frame of Wingdings-style
+// symbols. U+FE0E after each glyph asks for the plain-text (not emoji) form.
+const WINGDINGS = '✌☜☞☝✋☺☹☠✈✉✍✎✂☎⌛⌨☢☣☯✡❖◆■□❑❒⌧⍓⍰✔✖❄✱❂✪☼☾★☆✦♠♣♥♦';
+
+function wingdingFrameHtml(hash) {
+  const glyphs = Array.from(WINGDINGS);
+  const rand = mulberry32(stringToSeed(`${hash == null ? '' : hash}::wingdings`));
+  const run = (n, sep = '') => Array.from({ length: n }, () => glyphs[Math.floor(rand() * glyphs.length)] + '\uFE0E').join(sep);
+  const font = `font-family:'Segoe UI Symbol','DejaVu Sans','Noto Sans Symbols 2','Noto Sans Symbols',sans-serif; font-size:13px; line-height:16px; color:#000;`;
+  const row = (pos) => `<div style="position:absolute; ${pos}:0; left:0; right:0; height:16px; overflow:hidden; white-space:nowrap; letter-spacing:2px; ${font}">${run(120)}</div>`;
+  const col = (pos) => `<div style="position:absolute; top:16px; bottom:16px; ${pos}:0; width:16px; overflow:hidden; text-align:center; ${font}">${run(70, '<br>')}</div>`;
+  return row('top') + row('bottom') + col('left') + col('right');
+}
+
 function drumStreakHtml(hash) {
   const n = computeCrayonNote(hash);
   return `<div style="position:absolute; top:0; bottom:0; left:${n.streakLeft}%; width:2px; z-index:10; pointer-events:none; background:#000;"></div>`;
@@ -570,7 +609,8 @@ export default {
       : '';
 
     const sheetHtml = `
-      <div class="p-3 bg-slate-50 font-mono text-slate-900" style="position:relative; overflow:hidden; ${unhinged ? 'flex:0 1 auto; min-height:0;' : ''} border-color:#000; border-style:${style.borderStyle}; border-width:${style.borderWidth}px;">
+      <div class="p-3 bg-slate-50 font-mono text-slate-900" style="position:relative; overflow:hidden; ${unhinged ? 'flex:0 1 auto; min-height:0; padding:24px; border:none;' : `border-color:#000; border-style:${style.borderStyle}; border-width:${style.borderWidth}px;`}">
+        ${unhinged ? wingdingFrameHtml(state.dailyHash) : ''}
         ${codeSpill}
         <div style="position:relative; z-index:1; ${unhinged ? tonerFadeMask() : ''} transform: scale(${style.fontScale.toFixed(3)}); transform-origin: top left; width: ${(100 / style.fontScale).toFixed(2)}%; font-family: ${style.fontFamily};">
           ${warningBanner}
@@ -621,6 +661,6 @@ export default {
     // app.js's renderDailyMysteryIfActive() toggling #printSheet's
     // multi-page-mode class to match — it can't be done here, since this
     // function only returns markup, it doesn't touch the DOM directly.
-    return teaser + `<div class="print-only"><div class="print-page"></div><div class="print-page" style="position:relative; display:flex; flex-direction:column; height:100vh !important; max-height:100vh !important;">${drumStreakHtml(state.dailyHash)}${printDefectsHtml(state.dailyHash)}${ghostHeadlineHtml(esc(applySwaps(c.headline, c.swaps, state.dailySwapIndex)))}${sheetHtml}${crayonNoteHtml(state.dailyHash)}</div></div>`;
+    return teaser + `<div class="print-only"><div class="print-page"></div><div class="print-page" style="position:relative; display:flex; flex-direction:column; height:100vh !important; max-height:100vh !important;">${drumStreakHtml(state.dailyHash)}${printDefectsHtml(state.dailyHash)}${ghostHeadlineHtml(esc(applySwaps(c.headline, c.swaps, state.dailySwapIndex)))}${driverGarbageHtml(state.dailyHash)}${sheetHtml}${crayonNoteHtml(state.dailyHash)}</div></div>`;
   }
 };
