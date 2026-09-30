@@ -182,15 +182,22 @@ export default {
   // that does this, by design.
   async scheduled(event, env, ctx) {
     const seed = pickSeed();
+    let raw = "";
     try {
       const result = await env.AI.run(DAILY_MODEL, {
         messages: [
           { role: "system", content: DAILY_SYSTEM_PROMPT },
           { role: "user", content: `Today's theme: ${seed}` }
-        ]
+        ],
+        // Workers AI caps output at 256 tokens unless told otherwise, which
+        // cuts a full page of JSON (~450-700 tokens) off mid-object so it
+        // never parses. The system prompt is ~1,200 tokens, well inside the
+        // model's context window with this much room for the reply.
+        max_tokens: 1500
       });
 
-      const content = parseDailyContent(result.response);
+      raw = String(result?.response ?? "");
+      const content = parseDailyContent(raw);
       await env.DAILY_TEMPLATE.put(
         "latest",
         JSON.stringify({
@@ -203,7 +210,10 @@ export default {
     } catch (err) {
       // Leave whatever's already in KV untouched — a failed generation
       // should never blank out or break the live template.
-      console.error("[daily-template] generation failed:", err.message);
+      console.error(
+        `[daily-template] generation failed: ${err.message} ` +
+          `(seed "${seed}", ${raw.length} chars returned, ending: ${JSON.stringify(raw.slice(-80))})`
+      );
     }
   }
 };
