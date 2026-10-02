@@ -65,10 +65,12 @@ analytics GraphQL. When it's blocked, ask the owner to look in the dashboard.
 - Every printed page carries an 18mm QR (`siteQr(key)` in
   `public/js/siteConfig.js`, drawn in-page from the vendored
   `public/js/lib/qrcode.js`) pointing at `/q/<key>` (encoded in capitals
-  for QR alphanumeric mode). The Worker bumps CounterAPI `scan-<key>` and
+  for QR alphanumeric mode). The Worker bumps `count:scan-<key>` and
   302s to `/?t=<key>`, which preselects that template.
-- Printing also bumps `print-<key>` (`/api/counter?action=up&k=<key>`) next
-  to the unchanged total. See both at `/api/template-stats`.
+- Printing also bumps `count:print-<key>` (`/api/counter?action=up&k=<key>`);
+  the site-wide total stays on CounterAPI. Per-template counts live in KV
+  (`DAILY_TEMPLATE` namespace) because CounterAPI v2 doesn't create counters
+  on first use. See them at `/api/template-stats`. Previews share this KV.
 - Redirect overrides (promos): KV key `qr-redirects` in the
   `DAILY_TEMPLATE` namespace, JSON `{"all": "/promo.html", "ghost": "https://…"}`.
   Per-template beats `all`; `{key}` in a target becomes the template key;
