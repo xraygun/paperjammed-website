@@ -3,8 +3,12 @@
   "name": "paperjammednet",
   "main": "src/index.js",
   "compatibility_date": "2026-09-05",
+  // `binding` makes env.ASSETS exist inside the Worker. Without it, any path
+  // that isn't a real file (and isn't one of the Worker's own routes) threw
+  // "env.ASSETS is undefined" and showed Cloudflare's error 1101.
   "assets": {
-    "directory": "./public"
+    "directory": "./public",
+    "binding": "ASSETS"
   },
   "observability": {
     "logs": {

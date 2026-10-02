@@ -254,6 +254,9 @@ export default {
       }
     }
 
+    // Shouldn't happen now that wrangler.jsonc names the binding, but a
+    // missing binding must never turn a stray URL into an error 1101.
+    if (!env.ASSETS) return new Response("Not found", { status: 404 });
     return env.ASSETS.fetch(request);
   },
 
