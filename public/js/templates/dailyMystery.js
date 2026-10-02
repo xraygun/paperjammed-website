@@ -1,4 +1,4 @@
-import { SITE_URL } from '../siteConfig.js';
+import { SITE_URL, siteQr } from '../siteConfig.js';
 import { calibrationBars } from '../calibrationBars.js';
 
 // "The One That Keeps Changing" — content is generated once a day by a
@@ -398,16 +398,22 @@ function siteFooterHtml(customNote) {
   const note = customNote && customNote.trim() ? customNote : DEFAULT_FOOTNOTE;
   return `
     <div style="position:absolute; left:10mm; right:10mm; bottom:10mm; z-index:9;" class="pt-3 border-t border-slate-300">
-      <div class="flex justify-between items-end">
-        <div>
-          <p class="font-bold text-[11px] text-slate-800 uppercase tracking-wider">SYSTEM DIAGNOSTIC COMPLETION STATUS: <span class="text-slate-900">SUCCESS</span></p>
-          <p class="text-[10px] text-slate-600 italic">${esc(note)}</p>
+      <div class="flex items-end gap-3">
+        <div class="flex-1 min-w-0">
+          <div class="flex justify-between items-end">
+            <div>
+              <p class="font-bold text-[11px] text-slate-800 uppercase tracking-wider">SYSTEM DIAGNOSTIC COMPLETION STATUS: <span class="text-slate-900">SUCCESS</span></p>
+              <p class="text-[10px] text-slate-600 italic">${esc(note)}</p>
+            </div>
+            <div class="text-right">
+              <span class="text-[9px] text-slate-400 font-sans font-bold block">${SITE_URL.toUpperCase()} LOGICAL UNIT</span>
+              <span class="text-[9px] text-slate-400 font-sans font-bold block">SCAN FOR SERVICE LOG &rarr;</span>
+            </div>
+          </div>
+          <div class="mt-2 grid grid-cols-6 h-3 rounded overflow-hidden border border-slate-300">${calibrationBars.color}</div>
         </div>
-        <div class="text-right">
-          <span class="text-[9px] text-slate-400 font-sans font-bold block">${SITE_URL.toUpperCase()} LOGICAL UNIT</span>
-        </div>
+        ${siteQr('dailyMystery')}
       </div>
-      <div class="mt-2 grid grid-cols-6 h-3 rounded overflow-hidden border border-slate-300">${calibrationBars.color}</div>
     </div>`;
 }
 
@@ -666,6 +672,6 @@ export default {
     // app.js's renderDailyMysteryIfActive() toggling #printSheet's
     // multi-page-mode class to match — it can't be done here, since this
     // function only returns markup, it doesn't touch the DOM directly.
-    return teaser + `<div class="print-only"><div class="print-page"></div><div class="print-page" style="position:relative; display:flex; flex-direction:column; height:100vh !important; max-height:100vh !important; padding-bottom:calc(10mm + 72px) !important;">${drumStreakHtml(state.dailyHash)}${printDefectsHtml(state.dailyHash)}${ghostHeadlineHtml(esc(applySwaps(c.headline, c.swaps, state.dailySwapIndex)))}${driverGarbageHtml(state.dailyHash)}${sheetHtml}${crayonNoteHtml(state.dailyHash)}${siteFooterHtml(state.customNote)}</div></div>`;
+    return teaser + `<div class="print-only"><div class="print-page"></div><div class="print-page" style="position:relative; display:flex; flex-direction:column; height:100vh !important; max-height:100vh !important; padding-bottom:calc(10mm + 92px) !important;">${drumStreakHtml(state.dailyHash)}${printDefectsHtml(state.dailyHash)}${ghostHeadlineHtml(esc(applySwaps(c.headline, c.swaps, state.dailySwapIndex)))}${driverGarbageHtml(state.dailyHash)}${sheetHtml}${crayonNoteHtml(state.dailyHash)}${siteFooterHtml(state.customNote)}</div></div>`;
   }
 };

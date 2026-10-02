@@ -102,13 +102,17 @@ file and must be preserved on any edit.
 
 ### Registering a template
 
-In `public/js/templates/index.js`, three additions:
+Three additions:
 
 ```js
-import myTemplate from './myTemplate.js';          // 1
-export const templateOrder = [ ..., 'myTemplate' ]; // 2 — controls sidebar order
-export const templates = { ..., myTemplate };       // 3
+import myTemplate from './myTemplate.js';          // 1 — templates/index.js
+export const templateOrder = [ ..., 'myTemplate' ]; // 2 — templates/order.js, controls sidebar order
+export const templates = { ..., myTemplate };       // 3 — templates/index.js
 ```
+
+`order.js` is also read by the Worker: only keys listed there get a working
+QR redirect (`/q/<key>`) and per-template print/scan counts. Never rename a
+key after it has been printed in a QR code.
 
 Nothing else needs to change. `index.html` and the sidebar are fully data-driven.
 
@@ -483,7 +487,7 @@ Always deliver it in this shape:
 // 1. with the other imports:
 import myTemplate from './myTemplate.js';
 
-// 2. add to templateOrder (position = sidebar order):
+// 2. add to templateOrder in templates/order.js (position = sidebar order):
 'myTemplate'
 
 // 3. add to the templates object:

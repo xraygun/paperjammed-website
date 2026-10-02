@@ -1,6 +1,6 @@
 import { templates, templateOrder, categories } from './templates/index.js';
 import { calibrationBars } from './calibrationBars.js';
-import { SITE_URL } from './siteConfig.js';
+import { SITE_URL, siteQr } from './siteConfig.js';
 
 const API_ENDPOINT = '/api/counter';
 
@@ -135,7 +135,9 @@ function incrementCounter() {
   showCount(displayedCount + 1);
 
   try {
-    fetch(`${API_ENDPOINT}?action=up&t=${Date.now()}`, {
+    // k = the template being printed; the Worker also bumps that
+    // template's own print counter (the total is unaffected either way).
+    fetch(`${API_ENDPOINT}?action=up&k=${encodeURIComponent(state.currentTemplateKey)}&t=${Date.now()}`, {
       method: 'GET'
     }).then(async (res) => {
       if (res && res.ok) {
@@ -175,7 +177,7 @@ window.addEventListener('afterprint', () => {
 // size. Only #templateContent for single-page templates gets scaled.
 // ----------------------------------------------------------------------------
 const SHRINK_MIN_SCALE = 0.55; // below this, the content is too long — trim it instead of relying on shrinking
-const SHRINK_FOOTER_RESERVE_PX = 90; // rough space reserved for the absolutely-positioned global footer
+const SHRINK_FOOTER_RESERVE_PX = 110; // rough space reserved for the absolutely-positioned global footer (incl. its 18mm QR code)
 
 function mmToPx(mm) {
   return (mm * 96) / 25.4;
@@ -358,6 +360,9 @@ function setTemplate(key, fromUser = false) {
 
   const barEl = document.getElementById('calibrationBar');
   if (barEl) barEl.innerHTML = calibrationBars[t.configType || 'color'];
+
+  const qrEl = document.getElementById('globalQr');
+  if (qrEl) qrEl.innerHTML = siteQr(key);
 
   updateCustomNote();
 
@@ -659,8 +664,14 @@ function initApp() {
   const siteUrlLabel = document.getElementById('siteUrlLabel');
   if (siteUrlLabel) siteUrlLabel.textContent = `${SITE_URL.toUpperCase()} LOGICAL UNIT`;
 
+  // ?t=<key> preselects a template — it's where a printed page's QR code
+  // lands (the Worker's /q/<key> redirects to /?t=<key>).
+  const requested = new URLSearchParams(location.search).get('t');
+  const startKey = requested && templates[requested] ? requested : null;
+  if (startKey) state.currentTemplateKey = startKey;
+
   renderSidebar();
-  setTemplate(state.currentTemplateKey);
+  setTemplate(state.currentTemplateKey, !!startKey);
   loadPrintCount();
   loadDailyTemplate();
   scheduleDailySwap();

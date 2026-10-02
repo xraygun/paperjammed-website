@@ -4,8 +4,9 @@
 // To add a new prank template:
 //   1. Copy an existing file in js/templates/ (e.g. recipe.js) as a starting point.
 //   2. Fill in its label, description, icon, badge, colors, and render() function.
-//   3. Import it below and add it to the `templateOrder` array wherever you want
-//      it to appear in the sidebar list.
+//   3. Import it below, add it to `templates`, and add its key to the
+//      `templateOrder` array in order.js wherever you want it in the sidebar.
+//      (Once a key has been printed in a QR code, never rename it.)
 //   4. Add its key to one of the `categories` at the bottom of this file
 //      (anything left out still shows, under "Other").
 // That's it — the sidebar, print preview, and calibration bar all update
@@ -26,22 +27,10 @@ import spaceball from './spaceball.js';
 import allyourbase from './allyourbase.js';
 import dailyMystery from './dailyMystery.js';
 
-// Order controls the order they appear in the sidebar.
-export const templateOrder = [
-  'jamRemover',
-  'trayfeed',
-  'kiss',
-  'ghost',
-  'certificate',
-  'pcloadletter',
-  'recipe',
-  'technobabble',
-  'allyourbase' ,
-  'alignment',
-  'invoice',
-  'spaceball',
-  'dailyMystery'
-];
+// Order controls the order they appear in the sidebar. It lives in
+// order.js (the Worker reads it too, to know which QR/print keys are real).
+import { templateOrder } from './order.js';
+export { templateOrder };
 
 export const templates = {
   jamRemover,

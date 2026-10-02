@@ -5,6 +5,8 @@
 // plain KV read — nothing a client does can trigger a model call.
 // ============================================================================
 
+import { templateOrder } from "../public/js/templates/order.js";
+
 const DAILY_MODEL = "@cf/meta/llama-3.1-8b-instruct";
 
 const PROMPT_SEEDS = [
@@ -124,14 +126,60 @@ function parseDailyContent(raw) {
   };
 }
 
+// ============================================================================
+// Per-template counters (counterapi.dev, same workspace as the site total)
+// ============================================================================
+// print-<key>: bumped alongside the total when someone prints that template.
+// scan-<key>:  bumped when its printed QR code (/q/<key>) is scanned.
+// Only keys in templateOrder count, so junk URLs can't create counters.
+// Both are fire-and-forget: a counter failure never delays or breaks the
+// print button's own response or a scan's redirect.
+const COUNTER_BASE = "https://api.counterapi.dev/v2/paperjammed";
+const TEMPLATE_KEYS = new Map(templateOrder.map((k) => [k.toLowerCase(), k]));
+
+function templateKey(raw) {
+  return TEMPLATE_KEYS.get(String(raw || "").toLowerCase()) || null;
+}
+
+function counterName(kind, key) {
+  return `${kind}-${key.toLowerCase()}`;
+}
+
+function bumpCounter(env, name) {
+  return fetch(`${COUNTER_BASE}/${name}/up`, {
+    headers: { Authorization: `Bearer ${env.COUNTER_API_TOKEN}` }
+  })
+    .then((res) => {
+      if (!res.ok) console.error(`[counter] ${name} up failed: HTTP ${res.status}`);
+    })
+    .catch((err) => console.error(`[counter] ${name} up failed: ${err.message}`));
+}
+
+async function readCounter(env, name) {
+  try {
+    const res = await fetch(`${COUNTER_BASE}/${name}`, {
+      headers: { Authorization: `Bearer ${env.COUNTER_API_TOKEN}` }
+    });
+    if (!res.ok) return 0; // never bumped yet
+    const json = await res.json();
+    const val = parseInt(json?.data?.up_count ?? json?.data?.value ?? json?.up_count ?? json?.value, 10);
+    return isNaN(val) ? 0 : val;
+  } catch (err) {
+    return null;
+  }
+}
+
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     if (url.pathname === "/api/counter") {
       try {
         const action = url.searchParams.get("action");
         const apiUrl = `https://api.counterapi.dev/v2/paperjammed/paperjammedtotalcounter${action === "up" ? "/up" : ""}`;
+
+        const printedKey = action === "up" ? templateKey(url.searchParams.get("k")) : null;
+        if (printedKey) ctx.waitUntil(bumpCounter(env, counterName("print", printedKey)));
 
         const apiRes = await fetch(apiUrl, {
           headers: { Authorization: `Bearer ${env.COUNTER_API_TOKEN}` }
@@ -148,6 +196,38 @@ export default {
           headers: { "Content-Type": "application/json" }
         });
       }
+    }
+
+    // A printed page's QR code. The code itself spells the path in capitals
+    // (see siteQr() in public/js/siteConfig.js), so match either case.
+    const qrMatch = url.pathname.match(/^\/q\/([^/]+)\/?$/i);
+    if (qrMatch) {
+      const key = templateKey(qrMatch[1]);
+      if (key) ctx.waitUntil(bumpCounter(env, counterName("scan", key)));
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: key ? `/?t=${key}` : "/",
+          "Cache-Control": "no-store"
+        }
+      });
+    }
+
+    // Prints and QR scans per template, for the owner to check which
+    // designs get printed and which ones make people scan.
+    if (url.pathname === "/api/template-stats") {
+      const rows = await Promise.all(
+        templateOrder.map(async (key) => {
+          const [prints, scans] = await Promise.all([
+            readCounter(env, counterName("print", key)),
+            readCounter(env, counterName("scan", key))
+          ]);
+          return [key, { prints, scans }];
+        })
+      );
+      return new Response(JSON.stringify(Object.fromEntries(rows), null, 2), {
+        headers: { "Content-Type": "application/json", "Cache-Control": "no-store" }
+      });
     }
 
     if (url.pathname === "/api/daily-template") {

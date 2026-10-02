@@ -60,6 +60,18 @@ analytics GraphQL. When it's blocked, ask the owner to look in the dashboard.
   the crayon note or Printer's log, print defects, a Wingdings border and
   its own copy of the site footer.
 
+## QR codes and per-template counters
+
+- Every printed page carries an 18mm QR (`siteQr(key)` in
+  `public/js/siteConfig.js`, drawn in-page from the vendored
+  `public/js/lib/qrcode.js`) pointing at `/q/<key>` (encoded in capitals
+  for QR alphanumeric mode). The Worker bumps CounterAPI `scan-<key>` and
+  302s to `/?t=<key>`, which preselects that template.
+- Printing also bumps `print-<key>` (`/api/counter?action=up&k=<key>`) next
+  to the unchanged total. See both at `/api/template-stats`.
+- Keys come from `public/js/templates/order.js` (shared with the Worker).
+  Never rename a key once it's printed; add a redirect alias instead.
+
 ## Site rules
 
 - Anything that prints must show the site footer/URL somewhere.
@@ -87,17 +99,11 @@ analytics GraphQL. When it's blocked, ask the owner to look in the dashboard.
 
 ## Next up (owner-approved ideas)
 
-1. **QR code per template** on the printed page → short URL like
-   `paperjammed.net/q/<templateKey>` that the Worker counts (per-template
-   counter) and redirects to `/?t=<templateKey>`, so we can see which
-   designs get scanned. Generate the QR in the page (no third-party
-   request) or via the Bitly connector (check its free-plan QR limits
-   first). The page should honour `?t=` to preselect that template.
-2. **TinyFish connector**: open the live site and previews to verify
+1. **TinyFish connector**: open the live site and previews to verify
    changes the sandbox can't load.
-3. **Tally**: a "suggest a template" form linked from the footer.
-4. **dot.**: shareable review links for previews.
-5. A short screen-recording clip (as a looping muted video, not a GIF) of
+2. **Tally**: a "suggest a template" form linked from the footer.
+3. **dot.**: shareable review links for previews.
+4. A short screen-recording clip (as a looping muted video, not a GIF) of
    Chrome's "See more…" printer picker in the "Why use PaperJammed.net?"
    box. Waiting on the owner's recording.
-6. Ads/affiliates once accounts exist; update the privacy page first.
+5. Ads/affiliates once accounts exist; update the privacy page first.
