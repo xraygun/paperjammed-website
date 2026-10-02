@@ -1,4 +1,4 @@
-import { SITE_URL } from '../siteConfig.js';
+import { SITE_URL, siteQr } from '../siteConfig.js';
 
 export default {
   key: 'certificate',
@@ -92,8 +92,9 @@ export default {
             </div>
           </div>
 
-          <div class="text-center mt-2 text-[9px] text-slate-400 font-sans font-bold uppercase tracking-wider">
-            ${SITE_URL} — CERTIFICATION UNIT
+          <div class="mt-2 flex justify-center items-center gap-3 text-[9px] text-slate-400 font-sans font-bold uppercase tracking-wider">
+            <span>${SITE_URL} — CERTIFICATION UNIT<br>SCAN TO VERIFY &rarr;</span>
+            ${siteQr('certificate')}
           </div>
         </div>
       </div>

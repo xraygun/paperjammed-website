@@ -1,7 +1,7 @@
 // Tray Feed Stress Test template
 // This one is dynamic: it draws `state.trayFeedCount` printable pages, where
 // page 1 has instructions and every page after that is intentionally blank.
-import { siteFooterLine } from '../siteConfig.js';
+import { siteFooterLine, siteQr } from '../siteConfig.js';
 
 export default {
   key: 'trayfeed',
@@ -67,9 +67,12 @@ export default {
               </div>
             </div>
 
-            <div class="border-t border-slate-300 pt-2 text-[10px] text-slate-500 font-mono flex justify-between">
+            <div class="border-t border-slate-300 pt-2 text-[10px] text-slate-500 font-mono flex justify-between items-end gap-3">
               ${siteFooterLine('TRAY TEST')}
-              <span>TOTAL FEED: ${totalPages} SHEETS</span>
+              <span class="flex-none flex items-end gap-3">
+                <span>TOTAL FEED: ${totalPages} SHEETS</span>
+                ${siteQr('trayfeed')}
+              </span>
             </div>
           ` : `
             <div class="no-print opacity-40 text-slate-400 text-xs uppercase tracking-widest font-mono text-center my-auto">
