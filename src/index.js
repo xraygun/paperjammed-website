@@ -127,14 +127,15 @@ function parseDailyContent(raw) {
 }
 
 // ============================================================================
-// Per-template counters (counterapi.dev, same workspace as the site total)
+// Per-template counters (Workers KV, DAILY_TEMPLATE namespace)
 // ============================================================================
-// print-<key>: bumped alongside the total when someone prints that template.
-// scan-<key>:  bumped when its printed QR code (/q/<key>) is scanned.
+// count:print-<key>: bumped when someone prints that template.
+// count:scan-<key>:  bumped when its printed QR code (/q/<key>) is scanned.
 // Only keys in templateOrder count, so junk URLs can't create counters.
-// Both are fire-and-forget: a counter failure never delays or breaks the
-// print button's own response or a scan's redirect.
-const COUNTER_BASE = "https://api.counterapi.dev/v2/paperjammed";
+// The site-wide total stays on CounterAPI (/api/counter). These are a plain
+// read-then-write, so two hits in the same instant can lose one count —
+// fine at this site's volume. Both are fire-and-forget: a failure never
+// delays or breaks the print button's response or a scan's redirect.
 const TEMPLATE_KEYS = new Map(templateOrder.map((k) => [k.toLowerCase(), k]));
 
 function templateKey(raw) {
@@ -142,17 +143,20 @@ function templateKey(raw) {
 }
 
 function counterName(kind, key) {
-  return `${kind}-${key.toLowerCase()}`;
+  return `count:${kind}-${key.toLowerCase()}`;
 }
 
-function bumpCounter(env, name) {
-  return fetch(`${COUNTER_BASE}/${name}/up`, {
-    headers: { Authorization: `Bearer ${env.COUNTER_API_TOKEN}` }
-  })
-    .then((res) => {
-      if (!res.ok) console.error(`[counter] ${name} up failed: HTTP ${res.status}`);
-    })
-    .catch((err) => console.error(`[counter] ${name} up failed: ${err.message}`));
+async function readCounter(env, name) {
+  const val = parseInt(await env.DAILY_TEMPLATE.get(name), 10);
+  return isNaN(val) ? 0 : val;
+}
+
+async function bumpCounter(env, name) {
+  try {
+    await env.DAILY_TEMPLATE.put(name, String((await readCounter(env, name)) + 1));
+  } catch (err) {
+    console.error(`[counter] ${name} bump failed: ${err.message}`);
+  }
 }
 
 // ============================================================================
@@ -180,20 +184,6 @@ async function qrOverride(env, key) {
     console.error(`[qr] bad ${QR_REDIRECTS_KEY} JSON: ${err.message}`);
   }
   return null;
-}
-
-async function readCounter(env, name) {
-  try {
-    const res = await fetch(`${COUNTER_BASE}/${name}`, {
-      headers: { Authorization: `Bearer ${env.COUNTER_API_TOKEN}` }
-    });
-    if (!res.ok) return 0; // never bumped yet
-    const json = await res.json();
-    const val = parseInt(json?.data?.up_count ?? json?.data?.value ?? json?.up_count ?? json?.value, 10);
-    return isNaN(val) ? 0 : val;
-  } catch (err) {
-    return null;
-  }
 }
 
 export default {
@@ -246,7 +236,7 @@ export default {
           const [prints, scans] = await Promise.all([
             readCounter(env, counterName("print", key)),
             readCounter(env, counterName("scan", key))
-          ]);
+          ]).catch(() => [null, null]);
           return [key, { prints, scans }];
         })
       );

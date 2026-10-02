@@ -69,8 +69,8 @@
     <p>You can clear these at any time by clearing this site's data in your browser settings.</p>
 
     <h2>Print and scan counters</h2>
-    <p>When you print, the site asks our server to add one to a shared, anonymous tally, plus a tally for the template you printed (for example "Ghost-Buffer Exorcism"), so we can see which designs are popular. The tallies are kept by a counter service called <a href="https://counterapi.dev" rel="noopener">CounterAPI</a>. The request goes through our own server, so the counter service receives only the "+1" and the template name, not your IP address, and nothing about who printed or what you typed into the page is recorded.</p>
-    <p>Printed pages carry a QR code. Scanning it opens the same template on this site, and our server adds one to an anonymous tally for that template in the same way. Nothing about who scanned it is recorded.</p>
+    <p>When you print, the site asks our server to add one to a shared, anonymous tally, which is kept by a counter service called <a href="https://counterapi.dev" rel="noopener">CounterAPI</a>. The request goes through our own server, so the counter service receives the "+1" but not your IP address. Our server also adds one to a tally for the template you printed (for example "Ghost-Buffer Exorcism"), stored with our host, Cloudflare, so we can see which designs are popular. Nothing about who printed or what you typed into the page is recorded.</p>
+    <p>Printed pages carry a QR code. Scanning it opens the same template on this site, and our server adds one to an anonymous tally for that template, stored the same way. Nothing about who scanned it is recorded.</p>
 
     <h2>Hosting and site statistics</h2>
     <p>PaperJammed.net is hosted on <a href="https://www.cloudflare.com/privacypolicy/" rel="noopener">Cloudflare</a>. Like any website host, Cloudflare processes technical details of each visit, such as your IP address, browser type and the page requested, to deliver the site and protect it from abuse. Short-lived request logs may be used to fix problems.</p>
