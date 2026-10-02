@@ -69,6 +69,12 @@ analytics GraphQL. When it's blocked, ask the owner to look in the dashboard.
   302s to `/?t=<key>`, which preselects that template.
 - Printing also bumps `print-<key>` (`/api/counter?action=up&k=<key>`) next
   to the unchanged total. See both at `/api/template-stats`.
+- Redirect overrides (promos): KV key `qr-redirects` in the
+  `DAILY_TEMPLATE` namespace, JSON `{"all": "/promo.html", "ghost": "https://…"}`.
+  Per-template beats `all`; `{key}` in a target becomes the template key;
+  only `/path` or `https://` targets; delete the key to go back to normal.
+  Scans still count. Takes up to ~60s (KV edge cache). Meant to be edited
+  by the owner's CMS later.
 - Keys come from `public/js/templates/order.js` (shared with the Worker).
   Never rename a key once it's printed; add a redirect alias instead.
 

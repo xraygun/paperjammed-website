@@ -155,6 +155,33 @@ function bumpCounter(env, name) {
     .catch((err) => console.error(`[counter] ${name} up failed: ${err.message}`));
 }
 
+// ============================================================================
+// QR redirect overrides (KV key "qr-redirects" in the DAILY_TEMPLATE namespace)
+// ============================================================================
+// Normally a scan of /q/<key> lands on /?t=<key>. To send scans somewhere
+// else (a promo, say) without reprinting anything, store JSON like:
+//   { "all": "/promo.html", "ghost": "https://example.com/spooky" }
+// A template's own entry wins over "all"; delete an entry (or the whole key)
+// to go back to normal. "{key}" in a target is replaced with the template
+// key, e.g. "/promo.html?from={key}". Targets must be a site path ("/...")
+// or an https:// URL; anything else is ignored. Scans are counted either way.
+// KV is edge-cached for up to ~60s, so a change can take a minute to apply.
+const QR_REDIRECTS_KEY = "qr-redirects";
+
+async function qrOverride(env, key) {
+  try {
+    const raw = await env.DAILY_TEMPLATE?.get(QR_REDIRECTS_KEY);
+    if (!raw) return null;
+    const map = JSON.parse(raw);
+    const target = String(map[key] || map.all || "").replaceAll("{key}", key);
+    if (/^\/(?!\/)/.test(target) || /^https:\/\//i.test(target)) return target;
+    if (target) console.error(`[qr] ignoring invalid redirect target for ${key}: ${target}`);
+  } catch (err) {
+    console.error(`[qr] bad ${QR_REDIRECTS_KEY} JSON: ${err.message}`);
+  }
+  return null;
+}
+
 async function readCounter(env, name) {
   try {
     const res = await fetch(`${COUNTER_BASE}/${name}`, {
@@ -204,12 +231,10 @@ export default {
     if (qrMatch) {
       const key = templateKey(qrMatch[1]);
       if (key) ctx.waitUntil(bumpCounter(env, counterName("scan", key)));
+      const target = key ? (await qrOverride(env, key)) || `/?t=${key}` : "/";
       return new Response(null, {
         status: 302,
-        headers: {
-          Location: key ? `/?t=${key}` : "/",
-          "Cache-Control": "no-store"
-        }
+        headers: { Location: target, "Cache-Control": "no-store" }
       });
     }
 
