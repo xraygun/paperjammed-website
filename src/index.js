@@ -100,13 +100,29 @@ function sanitizeSwaps(raw) {
   return out;
 }
 
-// Models occasionally ignore the "no markdown fences" instruction and wrap
-// the JSON anyway — strip that before parsing. Anything else that doesn't
-// parse or match the expected shape throws, and the caller leaves the
-// previous day's content in KV untouched rather than publishing garbage.
+// Turns whatever the model sent back into the page object, tolerating the
+// ways it has gone wrong: Workers AI sometimes hands back the reply already
+// parsed (an object, not a string); the model sometimes wraps the JSON in
+// markdown fences or adds a sentence before/after it; and it sometimes puts
+// raw line breaks inside strings, which JSON.parse rejects. Anything that
+// still doesn't parse or match the expected shape throws, and the caller
+// leaves the previous day's content in KV untouched.
 function parseDailyContent(raw) {
-  const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "");
-  const data = JSON.parse(cleaned);
+  let data = raw;
+  if (typeof raw === "string") {
+    const unfenced = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "");
+    const start = unfenced.indexOf("{");
+    const end = unfenced.lastIndexOf("}");
+    const json = start >= 0 && end > start ? unfenced.slice(start, end + 1) : unfenced;
+    try {
+      data = JSON.parse(json);
+    } catch (err) {
+      // Raw newlines/tabs are only legal between tokens, where a space works
+      // just as well, so swapping them all out can only help.
+      data = JSON.parse(json.replace(/[\r\n\t]+/g, " "));
+    }
+  }
+  if (!data || typeof data !== "object") throw new Error("Reply was not JSON");
   if (
     typeof data.headline !== "string" ||
     typeof data.subheadline !== "string" ||
@@ -294,7 +310,7 @@ export default {
         max_tokens: 1500
       });
 
-      raw = String(result?.response ?? "");
+      raw = result?.response ?? "";
       const content = parseDailyContent(raw);
       await env.DAILY_TEMPLATE.put(
         "latest",
@@ -306,12 +322,25 @@ export default {
       );
       console.log(`[daily-template] generated from seed: "${seed}"`);
     } catch (err) {
-      // Leave whatever's already in KV untouched — a failed generation
-      // should never blank out or break the live template.
-      console.error(
-        `[daily-template] generation failed: ${err.message} ` +
-          `(seed "${seed}", ${raw.length} chars returned, ending: ${JSON.stringify(raw.slice(-80))})`
-      );
+      // Leave `latest` untouched — a failed generation should never blank out
+      // or break the live template. The details also go to KV (`last-error`)
+      // because the dashboard logs aren't reachable from every tool we use.
+      const text = typeof raw === "string" ? raw : JSON.stringify(raw);
+      const detail = {
+        at: new Date().toISOString(),
+        seed,
+        error: err.message,
+        replyType: typeof raw,
+        chars: text.length,
+        start: text.slice(0, 160),
+        end: text.slice(-160)
+      };
+      console.error("[daily-template] generation failed:", JSON.stringify(detail));
+      try {
+        await env.DAILY_TEMPLATE.put("last-error", JSON.stringify(detail));
+      } catch (e) {
+        // Nothing more we can do; the console line above still has it.
+      }
     }
   }
 };
