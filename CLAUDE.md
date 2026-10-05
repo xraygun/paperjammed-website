@@ -39,8 +39,10 @@ Ideas on hold live in `parked.md`.
 ## Cloudflare API token (injected, scoped to api.cloudflare.com)
 
 Can: KV read/write, Workers Scripts read, Workers Builds config edit,
-Web Analytics site info. **Can't:** Workers AI, Worker logs/observability,
-analytics GraphQL. When it's blocked, ask the owner to look in the dashboard.
+Web Analytics site info, Workers AI (`/ai/run/<model>`), Worker logs
+(POST `/accounts/{id}/workers/observability/telemetry/query`, filter
+`$workers.eventType` = `scheduled` to see cron runs). **Can't:** analytics
+GraphQL. When it's blocked, ask the owner to look in the dashboard.
 
 ## Daily template ("Temple of Unhinged Testpages", key `dailyMystery`)
 
@@ -56,6 +58,13 @@ analytics GraphQL. When it's blocked, ask the owner to look in the dashboard.
   written as each run starts and updated when it ends (`ok`/`failed`), so a
   run stuck at `started` was killed mid-way, and an old `startedAt` means
   the cron didn't fire.
+- One-off date crons (`40 14 5 10 *`) proved unreliable. To force a fresh
+  page now, import `src/index.js` in Node (copy `src/` + `public/` with a
+  `{"type":"module"}` package.json) and call `scheduled()` with an `env`
+  whose `AI.run` and `DAILY_TEMPLATE.get/put` shell out to curl against the
+  REST API (`/ai/run/<model>`, KV `values/<key>`). That writes `latest` and
+  `last-run` exactly as the cron would.
+- A token needs at least 3 distinct swaps, or the reply is rejected.
 - Hand-written fallbacks: KV keys `bank-*`. To swap one in, copy it to
   `latest` with a fresh `generatedAt`. Validate first: tokens numbered 1..N
   with no gaps, every token has a `swaps` entry and vice versa, no empty

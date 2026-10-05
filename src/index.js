@@ -191,8 +191,11 @@ function parseDailyContent(raw) {
   // Every [[N]] in the text needs a swaps entry, or that word silently
   // vanishes on the page; reject so the next model gets a turn instead.
   const text = [page.headline, page.subheadline, page.footerNote, ...page.bodyParagraphs, ...page.bulletPoints].join(" ");
-  const missing = [...new Set([...text.matchAll(/\[\[(\d+)\]\]/g)].map((m) => m[1]))].filter((n) => !page.swaps[n]);
-  if (missing.length) throw new Error(`No swaps for token(s) ${missing.join(", ")}`);
+  // Fewer than 3 distinct swaps means the word barely changes, so that counts
+  // as missing too.
+  const missing = [...new Set([...text.matchAll(/\[\[(\d+)\]\]/g)].map((m) => m[1]))]
+    .filter((n) => new Set((page.swaps[n] || []).map((w) => w.toLowerCase())).size < 3);
+  if (missing.length) throw new Error(`Too few swaps for token(s) ${missing.join(", ")}`);
   return page;
 }
 

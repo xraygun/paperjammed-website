@@ -27,9 +27,7 @@
   // the ONLY code path that calls the model; nothing a visitor does can
   // trigger a generation. 9am UTC, adjust to taste.
   "triggers": {
-    // The second entry is a one-off test run at 14:40 UTC on 5 October
-    // (it next matches in 2027); remove it once the daily run is confirmed.
-    "crons": ["0 9 * * *", "40 14 5 10 *"]
+    "crons": ["0 9 * * *"]
   },
 
   "kv_namespaces": [
