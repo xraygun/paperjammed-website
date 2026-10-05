@@ -28,8 +28,8 @@ const DAILY_MODELS = [
   "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
   "@cf/meta/llama-4-scout-17b-16e-instruct",
   "@cf/mistralai/mistral-small-3.1-24b-instruct",
-  "@cf/google/gemma-3-12b-it",
-  "@cf/meta/llama-3.1-8b-instruct-fast"
+  "@cf/google/gemma-4-26b-a4b-it",
+  "@cf/meta/llama-3.1-8b-instruct-fp8"
 ];
 
 const PROMPT_SEEDS = [
@@ -123,6 +123,32 @@ function sanitizeSwaps(raw) {
   return out;
 }
 
+function tryParse(text) {
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    return undefined;
+  }
+}
+
+// Appends whatever closing brackets/braces a truncated-at-the-end JSON reply
+// is missing (ignoring any inside strings), e.g. a page that ends after the
+// swaps object without the final "}".
+function closeBrackets(text) {
+  const open = [];
+  let inString = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inString) {
+      if (ch === "\\") i++;
+      else if (ch === '"') inString = false;
+    } else if (ch === '"') inString = true;
+    else if (ch === "{" || ch === "[") open.push(ch === "{" ? "}" : "]");
+    else if (ch === "}" || ch === "]") open.pop();
+  }
+  return text + open.reverse().join("");
+}
+
 // Turns whatever the model sent back into the page object, tolerating the
 // ways it has gone wrong: Workers AI sometimes hands back the reply already
 // parsed (an object, not a string); the model sometimes wraps the JSON in
@@ -137,13 +163,12 @@ function parseDailyContent(raw) {
     const start = unfenced.indexOf("{");
     const end = unfenced.lastIndexOf("}");
     const json = start >= 0 && end > start ? unfenced.slice(start, end + 1) : unfenced;
-    try {
-      data = JSON.parse(json);
-    } catch (err) {
-      // Raw newlines/tabs are only legal between tokens, where a space works
-      // just as well, so swapping them all out can only help.
-      data = JSON.parse(json.replace(/[\r\n\t]+/g, " "));
-    }
+    // Raw newlines/tabs are only legal between tokens, where a space works
+    // just as well; and models often stop one or two closing brackets short
+    // of a finished object. Try the reply as-is, then with both repaired.
+    const flat = json.replace(/[\r\n\t]+/g, " ");
+    data = tryParse(json) ?? tryParse(flat) ?? tryParse(closeBrackets(flat));
+    if (data === undefined) JSON.parse(json); // throws the original error
   }
   if (!data || typeof data !== "object") throw new Error("Reply was not JSON");
   if (
@@ -155,7 +180,7 @@ function parseDailyContent(raw) {
   ) {
     throw new Error("Shape mismatch");
   }
-  return {
+  const page = {
     headline: data.headline.slice(0, 120),
     subheadline: data.subheadline.slice(0, 200),
     bodyParagraphs: data.bodyParagraphs.slice(0, 4).map((p) => String(p).slice(0, 400)),
@@ -163,6 +188,12 @@ function parseDailyContent(raw) {
     footerNote: data.footerNote.slice(0, 200),
     swaps: sanitizeSwaps(data.swaps)
   };
+  // Every [[N]] in the text needs a swaps entry, or that word silently
+  // vanishes on the page; reject so the next model gets a turn instead.
+  const text = [page.headline, page.subheadline, page.footerNote, ...page.bodyParagraphs, ...page.bulletPoints].join(" ");
+  const missing = [...new Set([...text.matchAll(/\[\[(\d+)\]\]/g)].map((m) => m[1]))].filter((n) => !page.swaps[n]);
+  if (missing.length) throw new Error(`No swaps for token(s) ${missing.join(", ")}`);
+  return page;
 }
 
 // ============================================================================
