@@ -44,12 +44,15 @@ analytics GraphQL. When it's blocked, ask the owner to look in the dashboard.
 
 ## Daily template ("Temple of Unhinged Testpages", key `dailyMystery`)
 
-- Cron `0 9 * * *` UTC runs `scheduled()`: Llama 3.1 8B writes a JSON page
+- Cron `0 9 * * *` UTC runs `scheduled()`: a Workers AI model writes a JSON page
   using numbered `[[N]]` swap tokens, saved to KV key `latest`
   (namespace `0a148b477f20418782bc83163d143b86`, binding `DAILY_TEMPLATE`).
   A bad reply is logged and KV is left alone.
-- `max_tokens: 1500` is required (Workers AI defaults to 256, which
-  truncated every run until 2026-10-02).
+- `max_tokens: 1500` is required (Workers AI defaults to 256).
+- Models are tried in order from `DAILY_MODELS` (`src/index.js`); the one
+  that worked is saved as `model` on the page. Cloudflare retires models
+  (Llama 3.1 8B died 2026-05-30, error 5028), so if every model fails, KV
+  `last-error` lists each model's error: read it first.
 - Hand-written fallbacks: KV keys `bank-*`. To swap one in, copy it to
   `latest` with a fresh `generatedAt`. Validate first: tokens numbered 1..N
   with no gaps, every token has a `swaps` entry and vice versa, no empty
