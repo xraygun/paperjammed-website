@@ -52,7 +52,10 @@ analytics GraphQL. When it's blocked, ask the owner to look in the dashboard.
 - Models are tried in order from `DAILY_MODELS` (`src/index.js`); the one
   that worked is saved as `model` on the page. Cloudflare retires models
   (Llama 3.1 8B died 2026-05-30, error 5028), so if every model fails, KV
-  `last-error` lists each model's error: read it first.
+  `last-error` lists each model's error: read it first. KV `last-run` is
+  written as each run starts and updated when it ends (`ok`/`failed`), so a
+  run stuck at `started` was killed mid-way, and an old `startedAt` means
+  the cron didn't fire.
 - Hand-written fallbacks: KV keys `bank-*`. To swap one in, copy it to
   `latest` with a fresh `generatedAt`. Validate first: tokens numbered 1..N
   with no gaps, every token has a `swaps` entry and vice versa, no empty
