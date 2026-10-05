@@ -12,6 +12,18 @@ import { templateOrder } from "../public/js/templates/order.js";
 // error 5028 until this list existed), so a dead entry just falls through to
 // the next. The winning model is saved with the page; failures go to KV
 // `last-error` with one line per model tried.
+// A model that hangs shouldn't use up the whole scheduled run.
+const MODEL_TIMEOUT_MS = 60000;
+function withTimeout(promise, ms, label) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s`)), ms);
+    })
+  ]).finally(() => clearTimeout(timer));
+}
+
 const DAILY_MODELS = [
   "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
   "@cf/meta/llama-4-scout-17b-16e-instruct",
@@ -309,10 +321,17 @@ export default {
     const seed = pickSeed();
     const attempts = [];
     let lastRaw = "";
+    // Written first, so "the cron never fired" and "it fired but was killed
+    // before finishing" can be told apart from KV alone.
+    const startedAt = new Date().toISOString();
+    const markRun = (status, extra = {}) =>
+      env.DAILY_TEMPLATE.put("last-run", JSON.stringify({ startedAt, cron: event?.cron, seed, status, ...extra }))
+        .catch(() => {});
+    await markRun("started");
     for (const model of DAILY_MODELS) {
       let raw = "";
       try {
-        const result = await env.AI.run(model, {
+        const result = await withTimeout(env.AI.run(model, {
           messages: [
             { role: "system", content: DAILY_SYSTEM_PROMPT },
             { role: "user", content: `Today's theme: ${seed}` }
@@ -320,7 +339,7 @@ export default {
           // Workers AI caps output at 256 tokens unless told otherwise, which
           // cuts a full page of JSON (~450-700 tokens) off mid-object.
           max_tokens: 1500
-        });
+        }), MODEL_TIMEOUT_MS, model);
         raw = result?.response ?? "";
         const content = parseDailyContent(raw);
         await env.DAILY_TEMPLATE.put(
@@ -328,6 +347,7 @@ export default {
           JSON.stringify({ ...content, seed, model, generatedAt: new Date().toISOString() })
         );
         console.log(`[daily-template] generated with ${model} from seed: "${seed}"`);
+        await markRun("ok", { model, finishedAt: new Date().toISOString() });
         return;
       } catch (err) {
         const text = typeof raw === "string" ? raw : JSON.stringify(raw);
@@ -347,6 +367,7 @@ export default {
       end: lastRaw.slice(-160)
     };
     console.error("[daily-template] generation failed:", JSON.stringify(detail));
+    await markRun("failed", { finishedAt: new Date().toISOString() });
     try {
       await env.DAILY_TEMPLATE.put("last-error", JSON.stringify(detail));
     } catch (e) {
