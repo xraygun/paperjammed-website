@@ -7,7 +7,18 @@
 
 import { templateOrder } from "../public/js/templates/order.js";
 
-const DAILY_MODEL = "@cf/meta/llama-3.1-8b-instruct";
+// Tried in order; the first that answers with a usable page wins. Workers AI
+// retires models (Llama 3.1 8B went on 2026-05-30 and every run failed with
+// error 5028 until this list existed), so a dead entry just falls through to
+// the next. The winning model is saved with the page; failures go to KV
+// `last-error` with one line per model tried.
+const DAILY_MODELS = [
+  "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+  "@cf/meta/llama-4-scout-17b-16e-instruct",
+  "@cf/mistralai/mistral-small-3.1-24b-instruct",
+  "@cf/google/gemma-3-12b-it",
+  "@cf/meta/llama-3.1-8b-instruct-fast"
+];
 
 const PROMPT_SEEDS = [
   "a haunted toner cartridge that refuses to be replaced",
@@ -296,51 +307,50 @@ export default {
   // that does this, by design.
   async scheduled(event, env, ctx) {
     const seed = pickSeed();
-    let raw = "";
-    try {
-      const result = await env.AI.run(DAILY_MODEL, {
-        messages: [
-          { role: "system", content: DAILY_SYSTEM_PROMPT },
-          { role: "user", content: `Today's theme: ${seed}` }
-        ],
-        // Workers AI caps output at 256 tokens unless told otherwise, which
-        // cuts a full page of JSON (~450-700 tokens) off mid-object so it
-        // never parses. The system prompt is ~1,200 tokens, well inside the
-        // model's context window with this much room for the reply.
-        max_tokens: 1500
-      });
-
-      raw = result?.response ?? "";
-      const content = parseDailyContent(raw);
-      await env.DAILY_TEMPLATE.put(
-        "latest",
-        JSON.stringify({
-          ...content,
-          seed,
-          generatedAt: new Date().toISOString()
-        })
-      );
-      console.log(`[daily-template] generated from seed: "${seed}"`);
-    } catch (err) {
-      // Leave `latest` untouched — a failed generation should never blank out
-      // or break the live template. The details also go to KV (`last-error`)
-      // because the dashboard logs aren't reachable from every tool we use.
-      const text = typeof raw === "string" ? raw : JSON.stringify(raw);
-      const detail = {
-        at: new Date().toISOString(),
-        seed,
-        error: err.message,
-        replyType: typeof raw,
-        chars: text.length,
-        start: text.slice(0, 160),
-        end: text.slice(-160)
-      };
-      console.error("[daily-template] generation failed:", JSON.stringify(detail));
+    const attempts = [];
+    let lastRaw = "";
+    for (const model of DAILY_MODELS) {
+      let raw = "";
       try {
-        await env.DAILY_TEMPLATE.put("last-error", JSON.stringify(detail));
-      } catch (e) {
-        // Nothing more we can do; the console line above still has it.
+        const result = await env.AI.run(model, {
+          messages: [
+            { role: "system", content: DAILY_SYSTEM_PROMPT },
+            { role: "user", content: `Today's theme: ${seed}` }
+          ],
+          // Workers AI caps output at 256 tokens unless told otherwise, which
+          // cuts a full page of JSON (~450-700 tokens) off mid-object.
+          max_tokens: 1500
+        });
+        raw = result?.response ?? "";
+        const content = parseDailyContent(raw);
+        await env.DAILY_TEMPLATE.put(
+          "latest",
+          JSON.stringify({ ...content, seed, model, generatedAt: new Date().toISOString() })
+        );
+        console.log(`[daily-template] generated with ${model} from seed: "${seed}"`);
+        return;
+      } catch (err) {
+        const text = typeof raw === "string" ? raw : JSON.stringify(raw);
+        attempts.push({ model, error: String(err.message).slice(0, 240), replyType: typeof raw, chars: text.length });
+        if (text) lastRaw = text;
       }
+    }
+
+    // Every model failed: leave `latest` untouched so the live template never
+    // breaks, and record why in KV (`last-error`), since the dashboard logs
+    // aren't reachable from every tool we use.
+    const detail = {
+      at: new Date().toISOString(),
+      seed,
+      attempts,
+      start: lastRaw.slice(0, 160),
+      end: lastRaw.slice(-160)
+    };
+    console.error("[daily-template] generation failed:", JSON.stringify(detail));
+    try {
+      await env.DAILY_TEMPLATE.put("last-error", JSON.stringify(detail));
+    } catch (e) {
+      // Nothing more we can do; the console line above still has it.
     }
   }
 };
