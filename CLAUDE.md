@@ -64,7 +64,12 @@ GraphQL. When it's blocked, ask the owner to look in the dashboard.
   whose `AI.run` and `DAILY_TEMPLATE.get/put` shell out to curl against the
   REST API (`/ai/run/<model>`, KV `values/<key>`). That writes `latest` and
   `last-run` exactly as the cron would.
-- A token needs at least 3 distinct swaps, or the reply is rejected.
+- A token with no swaps rejects the reply; one with fewer than 3 distinct
+  swaps is printed as plain text (its first swap). Up to 12 tokens are kept.
+- Workers AI free tier: 10,000 neurons/day, shared with every app on the
+  account (resets 00:00 UTC). Error 4006 means it's spent: the run stops
+  there. A daily page costs a few hundred, so a 4006 means another app
+  used it up.
 - Hand-written fallbacks: KV keys `bank-*`. To swap one in, copy it to
   `latest` with a fresh `generatedAt`. Validate first: tokens numbered 1..N
   with no gaps, every token has a `swaps` entry and vice versa, no empty

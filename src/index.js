@@ -106,14 +106,14 @@ function pickSeed() {
 }
 
 // Bounds the model's "swaps" object to something the client can safely
-// render: numeric-ish keys only, at most 8 slots, at most 5 short synonyms
+// render: numeric-ish keys only, at most 12 slots, at most 5 short synonyms
 // each. A malformed or missing swaps object just yields {} — the client
 // treats any [[N]] token with no matching entry as a no-op, so this never
 // breaks the surrounding sentence, just skips the synonym-rotation for it.
 function sanitizeSwaps(raw) {
   if (!raw || typeof raw !== "object") return {};
   const out = {};
-  for (const key of Object.keys(raw).slice(0, 8)) {
+  for (const key of Object.keys(raw).slice(0, 12)) {
     if (!/^[1-9][0-9]?$/.test(key)) continue;
     const options = raw[key];
     if (!Array.isArray(options)) continue;
@@ -131,22 +131,33 @@ function tryParse(text) {
   }
 }
 
-// Appends whatever closing brackets/braces a truncated-at-the-end JSON reply
-// is missing (ignoring any inside strings), e.g. a page that ends after the
-// swaps object without the final "}".
+// Fixes the bracket mistakes models make (ignoring anything inside strings):
+// a "}" where a "]" was still open gets the missing "]" put in front of it,
+// a closer with nothing open is dropped, and whatever is still open at the
+// end is closed, e.g. a page that ends after the swaps object without "}".
 function closeBrackets(text) {
   const open = [];
+  let out = "";
   let inString = false;
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
     if (inString) {
-      if (ch === "\\") i++;
-      else if (ch === '"') inString = false;
+      if (ch === "\\") {
+        out += ch + (text[i + 1] ?? "");
+        i++;
+        continue;
+      }
+      if (ch === '"') inString = false;
     } else if (ch === '"') inString = true;
     else if (ch === "{" || ch === "[") open.push(ch === "{" ? "}" : "]");
-    else if (ch === "}" || ch === "]") open.pop();
+    else if (ch === "}" || ch === "]") {
+      if (!open.includes(ch)) continue;
+      while (open[open.length - 1] !== ch) out += open.pop();
+      open.pop();
+    }
+    out += ch;
   }
-  return text + open.reverse().join("");
+  return out + open.reverse().join("");
 }
 
 // Turns whatever the model sent back into the page object, tolerating the
@@ -191,11 +202,21 @@ function parseDailyContent(raw) {
   // Every [[N]] in the text needs a swaps entry, or that word silently
   // vanishes on the page; reject so the next model gets a turn instead.
   const text = [page.headline, page.subheadline, page.footerNote, ...page.bodyParagraphs, ...page.bulletPoints].join(" ");
-  // Fewer than 3 distinct swaps means the word barely changes, so that counts
-  // as missing too.
-  const missing = [...new Set([...text.matchAll(/\[\[(\d+)\]\]/g)].map((m) => m[1]))]
-    .filter((n) => new Set((page.swaps[n] || []).map((w) => w.toLowerCase())).size < 3);
-  if (missing.length) throw new Error(`Too few swaps for token(s) ${missing.join(", ")}`);
+  const used = [...new Set([...text.matchAll(/\[\[(\d+)\]\]/g)].map((m) => m[1]))];
+  const missing = used.filter((n) => !page.swaps[n]);
+  if (missing.length) throw new Error(`No swaps for token(s) ${missing.join(", ")}`);
+  // A token with fewer than 3 distinct swaps barely changes, so print its
+  // first word as plain text instead of rejecting an otherwise good page.
+  const weak = used.filter((n) => new Set(page.swaps[n].map((w) => w.toLowerCase())).size < 3);
+  if (weak.length) {
+    const inline = (str) => str.replace(/\[\[(\d+)\]\]/g, (tok, n) => (weak.includes(n) ? page.swaps[n][0] : tok));
+    page.headline = inline(page.headline);
+    page.subheadline = inline(page.subheadline);
+    page.footerNote = inline(page.footerNote);
+    page.bodyParagraphs = page.bodyParagraphs.map(inline);
+    page.bulletPoints = page.bulletPoints.map(inline);
+  }
+  for (const n of Object.keys(page.swaps)) if (!used.includes(n) || weak.includes(n)) delete page.swaps[n];
   return page;
 }
 
@@ -385,8 +406,15 @@ export default {
         return;
       } catch (err) {
         const text = typeof raw === "string" ? raw : JSON.stringify(raw);
-        attempts.push({ model, error: String(err.message).slice(0, 240), replyType: typeof raw, chars: text.length });
+        const message = String(err.message);
+        // For a JSON error, keep the reply around the spot it broke.
+        const at = Number(message.match(/position (\d+)/)?.[1]);
+        const near = Number.isFinite(at) ? text.slice(Math.max(0, at - 80), at + 40) : undefined;
+        attempts.push({ model, error: message.slice(0, 240), replyType: typeof raw, chars: text.length, near });
         if (text) lastRaw = text;
+        // 4006: the account's daily Workers AI allowance is spent, which
+        // every model shares, so trying the rest only adds noise.
+        if (message.startsWith("4006")) break;
       }
     }
 
