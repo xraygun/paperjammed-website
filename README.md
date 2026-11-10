@@ -25,10 +25,15 @@ js/templates/invoice.js
 js/templates/spaceball.js
 ```
 
-No build step — it's plain ES modules, so you can open it with any static file
-server (it won't work over `file://` because browsers block module imports
-from the filesystem; `python3 -m http.server` or your existing Cloudflare
-Pages/Worker setup both work fine).
+It's plain ES modules, so you can open it with any static file server (it
+won't work over `file://` because browsers block module imports from the
+filesystem; `python3 -m http.server` from `public/` works fine).
+
+The one built file is `public/css/tailwind.css`: run `npm install` once, then
+`npm run build:css` whenever a Tailwind class is added or changed, and commit
+the result. `npm test` checks it is up to date, along with the Worker's page
+routes and that every template has its page text, footer link and preview
+image.
 
 ## Adding a new template
 
@@ -69,8 +74,13 @@ export const templateOrder = [..., 'myNewPrank'];
 export const templates = { ..., myNewPrank };
 ```
 
-That's it. The sidebar list, the print preview, and the calibration bar all
-pick it up automatically — `index.html` and `app.js` never need to change.
+The sidebar list, the print preview, and the calibration bar all pick it up
+automatically.
+
+4. Give it its own page (`/t/myNewPrank`): add an entry to
+   `js/templates/meta.js`, a link in the "Test pages:" row of `index.html`'s
+   footer, and a preview image (`node scripts/make-og-images.mjs myNewPrank`).
+   Then `npm run build:css` and `npm test`.
 
 ## Things that stayed the same
 

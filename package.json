@@ -2,8 +2,13 @@
   "name": "paperjammed-site",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "PaperJammed printer prank generator",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build:css": "tailwindcss -c tailwind.config.cjs -i tailwind.input.css -o public/css/tailwind.css --minify",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.17"
   }
 }

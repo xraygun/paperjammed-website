@@ -1,3 +1,6 @@
 User-agent: *
 Allow: /
 Disallow: /api/
+Disallow: /q/
+
+Sitemap: https://paperjammed.net/sitemap.xml

@@ -6,6 +6,7 @@
 // ============================================================================
 
 import { templateOrder } from "../public/js/templates/order.js";
+import { templateMeta, templatePageTitle, templatePath, templateAboutHtml, escapeHtml } from "../public/js/templates/meta.js";
 
 // Tried in order; the first that answers with a usable page wins. Workers AI
 // retires models (Llama 3.1 8B went on 2026-05-30 and every run failed with
@@ -235,7 +236,8 @@ async function bumpCounter(env, name) {
 // ============================================================================
 // QR redirect overrides (KV key "qr-redirects" in the DAILY_TEMPLATE namespace)
 // ============================================================================
-// Normally a scan of /q/<key> lands on /?t=<key>. To send scans somewhere
+// Normally a scan of /q/<key> lands on /pranked?t=<key> (public/pranked.html,
+// the "you've been pranked" page). To send scans somewhere
 // else (a promo, say) without reprinting anything, store JSON like:
 //   { "all": "/promo.html", "ghost": "https://example.com/spooky" }
 // A template's own entry wins over "all"; delete an entry (or the whole key)
@@ -259,9 +261,99 @@ async function qrOverride(env, key) {
   return null;
 }
 
+// ============================================================================
+// A page per template (/t/<key>) and the sitemap
+// ============================================================================
+// /t/<key> is public/index.html with that template's own title, description,
+// canonical URL and link preview image swapped into the <head>, and its
+// "About this test page" text filled in, so search engines and link previews
+// see 13 different pages instead of one. app.js reads the key from the path
+// and opens that template. The swap is plain text replacement between marker
+// comments in index.html (SEO:BEGIN/END, ABOUT:BEGIN/END); if a marker goes
+// missing the page is still served, just with the home page's text.
+// Canonical and preview URLs always name the live site, so a preview build
+// never asks to be indexed under its workers.dev address.
+const SITE_ORIGIN = "https://paperjammed.net";
+const DEFAULT_OG_IMAGE = "/assets/og-image.png";
+
+function ogImagePath(key) {
+  return templateMeta[key].noOgImage ? DEFAULT_OG_IMAGE : `/assets/og/${key}.jpg`;
+}
+
+function seoHead(key) {
+  const title = escapeHtml(templatePageTitle(key));
+  const description = escapeHtml(templateMeta[key].description);
+  const pageUrl = `${SITE_ORIGIN}${templatePath(key)}`;
+  const image = `${SITE_ORIGIN}${ogImagePath(key)}`;
+  return `<title>${title}</title>
+<meta name="title" content="${title}">
+<meta name="description" content="${description}">
+<link rel="canonical" href="${pageUrl}">
+<meta property="og:type" content="website">
+<meta property="og:url" content="${pageUrl}">
+<meta property="og:site_name" content="PaperJammed">
+<meta property="og:title" content="${title}">
+<meta property="og:description" content="${description}">
+<meta property="og:image" content="${image}">
+<meta property="twitter:card" content="summary_large_image">
+<meta property="twitter:url" content="${pageUrl}">
+<meta property="twitter:title" content="${title}">
+<meta property="twitter:description" content="${description}">
+<meta property="twitter:image" content="${image}">`;
+}
+
+function between(html, name, replacement) {
+  const re = new RegExp(`<!-- ${name}:BEGIN[\\s\\S]*?<!-- ${name}:END -->`);
+  // A function, so "$" in the replacement text is never read as a pattern.
+  return html.replace(re, () => `<!-- ${name}:BEGIN -->${replacement}<!-- ${name}:END -->`);
+}
+
+export function renderTemplatePage(indexHtml, key) {
+  return between(between(indexHtml, "SEO", `\n${seoHead(key)}\n`), "ABOUT", templateAboutHtml(key));
+}
+
+async function templatePage(request, env, key) {
+  // "/" is index.html. A fresh request on purpose: passing the visitor's
+  // If-None-Match along could come back as a 304 with nothing to rewrite.
+  const res = await env.ASSETS.fetch(new Request(new URL("/", request.url)));
+  if (!res.ok) return res;
+  return new Response(renderTemplatePage(await res.text(), key), {
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "public, max-age=0, must-revalidate"
+    }
+  });
+}
+
+function sitemapXml() {
+  const paths = ["/", ...templateOrder.map(templatePath)];
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${paths.map((p) => `  <url><loc>${SITE_ORIGIN}${p}</loc></url>`).join("\n")}
+</urlset>
+`;
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+
+    const pageMatch = url.pathname.match(/^\/t\/([^/]+)\/?$/i);
+    if (pageMatch) {
+      const key = templateKey(pageMatch[1]);
+      if (!key) return Response.redirect(new URL("/", url).href, 302);
+      // One address per template: /t/GHOST and /t/ghost/ go to /t/ghost.
+      if (url.pathname !== templatePath(key)) {
+        return Response.redirect(new URL(templatePath(key), url).href, 301);
+      }
+      if (env.ASSETS) return templatePage(request, env, key);
+    }
+
+    if (url.pathname === "/sitemap.xml") {
+      return new Response(sitemapXml(), {
+        headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=3600" }
+      });
+    }
 
     if (url.pathname === "/api/counter") {
       try {
@@ -294,7 +386,7 @@ export default {
     if (qrMatch) {
       const key = templateKey(qrMatch[1]);
       if (key) ctx.waitUntil(bumpCounter(env, counterName("scan", key)));
-      const target = key ? (await qrOverride(env, key)) || `/?t=${key}` : "/";
+      const target = key ? (await qrOverride(env, key)) || `/pranked?t=${key}` : "/";
       return new Response(null, {
         status: 302,
         headers: { Location: target, "Cache-Control": "no-store" }
