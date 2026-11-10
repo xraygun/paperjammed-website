@@ -73,6 +73,15 @@ Ideas on hold live in `parked.md`.
 
 ## Cloudflare API token (injected, scoped to api.cloudflare.com)
 
+The token is a network secret (`Cloudflare_API_Token`) on one of the owner's
+two cloud environments, both named "Default". A session started on the other
+one gets a proxy 403 for api.cloudflare.com and cannot switch over (the
+matching names block it): it can't read build logs, fix a build trigger or
+read KV. Say so early and ask the owner to start the session on the
+environment that has the token, or to rename one of them. Public pages and
+`/api/template-stats` can still be read through TinyFish.
+
+
 Can: KV read/write, Workers Scripts read, Workers Builds config edit,
 Web Analytics site info, Workers AI (`/ai/run/<model>`), Worker logs
 (POST `/accounts/{id}/workers/observability/telemetry/query`, filter
