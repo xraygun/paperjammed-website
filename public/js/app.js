@@ -1,6 +1,7 @@
 import { templates, templateOrder, categories } from './templates/index.js';
 import { calibrationBars } from './calibrationBars.js';
 import { SITE_URL, siteQr } from './siteConfig.js';
+import { templateMeta, templatePageTitle, templatePath, templateAboutHtml } from './templates/meta.js';
 
 const API_ENDPOINT = '/api/counter';
 
@@ -365,8 +366,65 @@ function setTemplate(key, fromUser = false) {
   if (qrEl) qrEl.innerHTML = siteQr(key);
 
   updateCustomNote();
+  updateTemplatePageInfo(key, fromUser);
 
   if (fromUser) focusSelection(key);
+}
+
+// ----------------------------------------------------------------------------
+// Each template's own address (/t/<key>) and the share button
+// ----------------------------------------------------------------------------
+// The Worker serves this same page at /t/<key> with that template's title
+// and description already in the HTML. Here we keep the "About" box current
+// and, once the visitor picks a template, put its address in the address
+// bar (no reload, no extra history entry) so a copied link opens the same
+// template. The home page keeps its own address and title until then.
+const HOME_TITLE = document.title;
+let onTemplatePage = false;
+
+function updateTemplatePageInfo(key, fromUser) {
+  const about = document.getElementById('templateAbout');
+  if (about) about.innerHTML = templateAboutHtml(key);
+
+  if (fromUser) {
+    onTemplatePage = true;
+    try { history.replaceState(null, '', templatePath(key)); } catch (e) {}
+  }
+  document.title = onTemplatePage && templateMeta[key] ? templatePageTitle(key) : HOME_TITLE;
+}
+
+function shareUrl() {
+  return `${location.origin}${templatePath(state.currentTemplateKey)}`;
+}
+
+function flashShareLabel(text) {
+  const label = document.getElementById('shareButtonLabel');
+  const btn = document.getElementById('shareButton');
+  if (!label || !btn) return;
+  // Phones show only the icon, so the button's title carries the message too.
+  label.textContent = text;
+  btn.title = text;
+  setTimeout(() => { label.textContent = 'Share'; btn.title = ''; }, 2000);
+}
+
+async function handleShareAction() {
+  const key = state.currentTemplateKey;
+  const url = shareUrl();
+  const label = templateMeta[key] ? templateMeta[key].label : 'Printer test page';
+  // The system share sheet on phones and tablets; on a computer a copied
+  // link is what people want.
+  if (navigator.share && window.matchMedia('(pointer: coarse)').matches) {
+    try {
+      await navigator.share({ title: `${label} | PaperJammed.net`, text: `Leave this on someone's printer: ${label}`, url });
+    } catch (e) { /* closed the share sheet: nothing to do */ }
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    flashShareLabel('Link copied');
+  } catch (e) {
+    window.prompt('Copy this link:', url);
+  }
 }
 
 // After a click: center the chosen template (and its now-open controls) in
@@ -666,9 +724,13 @@ function initApp() {
 
   // ?t=<key> preselects a template — it's where a printed page's QR code
   // lands (the Worker's /q/<key> redirects to /?t=<key>).
-  const requested = new URLSearchParams(location.search).get('t');
+  // A template's own page is /t/<key> (served by the Worker with that
+  // template's title and description).
+  const pathMatch = location.pathname.match(/^\/t\/([^/]+)\/?$/);
+  const requested = pathMatch ? pathMatch[1] : new URLSearchParams(location.search).get('t');
   const startKey = requested && templates[requested] ? requested : null;
   if (startKey) state.currentTemplateKey = startKey;
+  onTemplatePage = !!(pathMatch && startKey);
 
   renderSidebar();
   setTemplate(state.currentTemplateKey, !!startKey);
@@ -694,6 +756,7 @@ window.handleDailyHashRefresh = handleDailyHashRefresh;
 window.handleDailyIntensityChange = handleDailyIntensityChange;
 window.updateCustomNote = updateCustomNote;
 window.handlePrintAction = handlePrintAction;
+window.handleShareAction = handleShareAction;
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initApp);

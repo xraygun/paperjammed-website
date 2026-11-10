@@ -17,6 +17,41 @@ Ideas on hold live in `parked.md`.
 - **Public messaging:** don't lean into "AI-generated" — keep AI out of
   site copy and promo text.
 
+## Commands
+
+- `npm install` once, then `npm test` before every push (Worker routes,
+  template pages, stylesheet freshness).
+- `npm run build:css` after adding or changing any Tailwind class anywhere
+  in `public/`; commit `public/css/tailwind.css` with the change.
+- `node scripts/make-og-images.mjs [key…]` redraws link preview images
+  (needs `NODE_PATH=/opt/node22/lib/node_modules`, and `OG_LOCAL_NPM` for
+  fonts in this sandbox; see the script's header).
+
+## Traps
+
+- **A class that isn't in the built stylesheet does nothing.** Tailwind is
+  built ahead of time, not loaded from the CDN. Never assemble a class name
+  from pieces (`bg-${x}-500`); write it out whole, then `npm run build:css`.
+- **`index.html` is served at two depths** (`/` and `/t/<key>`), so every
+  local `src`/`href` in it must start with `/`.
+- **Keep the marker comments in `index.html`** (`SEO:BEGIN/END`,
+  `ABOUT:BEGIN/END`): the Worker swaps the text between them for `/t/<key>`.
+- `tailwind.css` is linked after `style.css` on purpose (same cascade order
+  the CDN script produced). Don't reorder them.
+
+## Template pages, sharing and the sitemap
+
+- Each template has its own page, `/t/<key>`: the Worker (`templatePage` in
+  `src/index.js`) serves `index.html` with that template's title,
+  description, canonical URL and preview image
+  (`public/assets/og/<key>.jpg`) from `public/js/templates/meta.js`.
+  `/sitemap.xml` is generated from `order.js`. Old `/?t=<key>` links still
+  open the template.
+- Picking a template puts `/t/<key>` in the address bar (`replaceState`);
+  the header's Share button copies that link (share sheet on phones).
+- A new template needs a `meta.js` entry, a footer link in `index.html` and
+  a preview image; `npm test` fails until all three exist.
+
 ## Deploys and previews (Cloudflare Workers Builds)
 
 - Worker `paperjammednet`, account `0cf47ba59743774195897790d77116e0`.
@@ -81,7 +116,10 @@ GraphQL. When it's blocked, ask the owner to look in the dashboard.
   `public/js/siteConfig.js`, drawn in-page from the vendored
   `public/js/lib/qrcode.js`) pointing at `/q/<key>` (encoded in capitals
   for QR alphanumeric mode). The Worker bumps `count:scan-<key>` and
-  302s to `/?t=<key>`, which preselects that template.
+  302s to `/pranked?t=<key>` (`public/pranked.html`): the "you've been
+  pranked" page for whoever found the sheet, read on a phone, with links to
+  that template's page, the home page and a share button. It has no
+  third-party requests and is `noindex`.
 - Printing also bumps `count:print-<key>` (`/api/counter?action=up&k=<key>`);
   the site-wide total stays on CounterAPI. Per-template counts live in KV
   (`DAILY_TEMPLATE` namespace) because CounterAPI v2 doesn't create counters
@@ -106,14 +144,16 @@ GraphQL. When it's blocked, ask the owner to look in the dashboard.
 
 ## Testing in this sandbox
 
-- The proxy blocks paperjammed.net, *.workers.dev, Google Fonts, the
-  Tailwind CDN and img.buymeacoffee.com, so check the real look on the
+- The proxy blocks paperjammed.net, *.workers.dev, Google Fonts, cdnjs
+  and img.buymeacoffee.com (and, in some sessions, api.cloudflare.com), so check the real look on the
   preview, or use the TinyFish connector to open it.
 - Headless Chromium: Playwright at `/opt/node22/lib/node_modules/playwright`,
   `PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers`; serve `public/` with
-  `python3 -m http.server`. For real styling, build Tailwind v3 locally
-  (`npx tailwindcss` with `content: public/**/*.{html,js}`) and serve it in
-  place of `cdn.tailwindcss.com` via `page.route`. To see scrollbars, launch
+  `python3 -m http.server` (use `/?t=<key>`; `/t/<key>` needs the Worker).
+  To exercise the Worker's routes in a browser, wrap `src/index.js` in a
+  small Node `http` server whose `env.ASSETS.fetch` reads from `public/`.
+  For the real fonts and icons, serve npm copies (`@fontsource/*`,
+  `@fortawesome/fontawesome-free@6.4.0`) via `page.route`. To see scrollbars, launch
   with `ignoreDefaultArgs: ['--hide-scrollbars']`.
 - Print checks: `page.emulateMedia({media:'print'})` + `page.pdf()`, then
   rasterize/search with PyMuPDF (`import fitz`).
